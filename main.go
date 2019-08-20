@@ -25,9 +25,9 @@ type KindCluster struct {
 }
 
 type APIResult struct {
-	Output string
+	Output   string
 	Clusters []string
-	Error  string
+	Error    string
 }
 
 type DB struct {
@@ -35,6 +35,15 @@ type DB struct {
 }
 
 var Proxied = &DB{Proxy: make(map[string]string)}
+
+func NewAPIResult(output string) APIResult {
+	res, err := Kind("get", "clusters")
+	if err != nil {
+		return APIResult{Error: err.Error(), Output: res}
+	}
+	clusters := strings.Split(res, "\n")
+	return APIResult{Clusters: clusters, Output: output}
+}
 
 func main() {
 	m := macaron.Classic()
@@ -64,7 +73,7 @@ func GetKubeEndpoint(ctx *macaron.Context) {
 		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
 		return
 	}
-	ctx.JSON(200, APIResult{Output: os.Getenv("HOST")+port})
+	ctx.JSON(200, NewAPIResult(os.Getenv("HOST")+port))
 }
 
 func KubeStartProxy(clustername, kubeconfig string, port int) error {
@@ -85,7 +94,7 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 	// Separate listening from serving so we can report the bound port
 	// when it is chosen by os (eg: port == 0)
 
-	l, err := server.Listen("0.0.0.0", port)
+	l, err := server.Listen(os.Getenv("HOST"), port)
 
 	if err != nil {
 		return err
@@ -104,7 +113,6 @@ func KubePath(cluster string) (string, error) {
 		return "", err
 	}
 
-	res = strings.TrimSuffix(res, "\n")
 	return res, nil
 }
 func KubeConfig(id string) ([]byte, error) {
@@ -123,10 +131,13 @@ func KubeConfig(id string) ([]byte, error) {
 
 func Kind(args ...string) (string, error) {
 	out, err := exec.Command("kind", args...).CombinedOutput()
+	output := string(out)
+	output = strings.TrimSuffix(output, "\n")
+
 	if err != nil {
-		return string(out), err
+		return output, err
 	}
-	return string(out), nil
+	return output, nil
 }
 
 func GetKubeConfig(ctx *macaron.Context) {
@@ -163,7 +174,7 @@ func NewCluster(ctx *macaron.Context, kc KindCluster) {
 		ctx.JSON(500, APIResult{Error: err.Error()})
 		return
 	}
-	ctx.JSON(200, APIResult{Output: res})
+	ctx.JSON(200, NewAPIResult(res))
 }
 
 func DeleteCluster(ctx *macaron.Context) {
@@ -171,19 +182,11 @@ func DeleteCluster(ctx *macaron.Context) {
 	res, err := Kind("delete", "cluster", "--name", id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
-
 		return
 	}
-	ctx.JSON(200, APIResult{Output: res})
+	ctx.JSON(200, NewAPIResult(res))
 }
 
 func ListClusters(ctx *macaron.Context) {
-	res, err := Kind("get", "clusters")
-	if err != nil {
-		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
-
-		return
-	}
-	clusters := strings.Split(res,"\n")
-	ctx.JSON(200, APIResult{Clusters: clusters})
+	ctx.JSON(200, NewAPIResult(""))
 }
