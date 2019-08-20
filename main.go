@@ -2,16 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/cssivision/reverseproxy"
 	"github.com/go-macaron/binding"
 	"go.uber.org/zap"
 	"gopkg.in/macaron.v1"
 	"io/ioutil"
-	"net/http"
-	"net/url"
+
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +26,7 @@ type KindCluster struct {
 
 type APIResult struct {
 	Output string
+	Clusters []string
 	Error  string
 }
 
@@ -47,7 +45,7 @@ func main() {
 	m.Delete("/:id", DeleteCluster)
 	m.Get("/", ListClusters)
 
-	m.Get("/kube/:id", GetProxyPort)
+	m.Get("/kube/:id", GetKubeEndpoint)
 
 	m.Run()
 }
@@ -59,14 +57,14 @@ func GetFreePort() (int, error) {
 	return port, nil
 }
 
-func GetProxyPort(ctx *macaron.Context) {
+func GetKubeEndpoint(ctx *macaron.Context) {
 	id := ctx.Params(":id")
 	port, ok := Proxied.Proxy[id]
 	if !ok {
 		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
 		return
 	}
-	ctx.JSON(200, APIResult{Output: port})
+	ctx.JSON(200, APIResult{Output: os.Getenv("HOST")+port})
 }
 
 func KubeStartProxy(clustername, kubeconfig string, port int) error {
@@ -99,33 +97,6 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 	return nil
 }
 
-func KubeConfigProxied(ctx *macaron.Context, w http.ResponseWriter, r *http.Request) {
-	id := ctx.Params(":id")
-	kubeconfig, _ := KubeConfig(id)
-
-	reg, _ := regexp.Compile("localhost:(.*)")
-	fmt.Println("Proxying " + id)
-	reverse := reg.ReplaceAllString(string(kubeconfig), os.Getenv("HOST")+":"+os.Getenv("PORT")+"/kube/"+id)
-	ctx.PlainText(200, []byte(reverse))
-}
-
-func KubeProxy(ctx *macaron.Context, w http.ResponseWriter, r *http.Request) {
-	id := ctx.Params(":id")
-	kubeconfig, _ := KubeConfig(id)
-
-	reg, _ := regexp.Compile("localhost:(.*)")
-	reverse := reg.FindString(string(kubeconfig))
-	path, err := url.Parse("https://" + reverse)
-	if err != nil {
-		panic(err)
-		return
-	}
-	fmt.Println("Proxying " + id + " " + reverse)
-	fmt.Println(path)
-	reverseproxy.NewReverseProxy(path).ProxyHTTPS(w, r)
-
-}
-
 func KubePath(cluster string) (string, error) {
 	res, err := Kind("get", "kubeconfig-path", "--name", cluster)
 	if err != nil {
@@ -153,7 +124,7 @@ func KubeConfig(id string) ([]byte, error) {
 func Kind(args ...string) (string, error) {
 	out, err := exec.Command("kind", args...).CombinedOutput()
 	if err != nil {
-		return "", err
+		return string(out), err
 	}
 	return string(out), nil
 }
@@ -213,5 +184,6 @@ func ListClusters(ctx *macaron.Context) {
 
 		return
 	}
-	ctx.JSON(200, APIResult{Output: res})
+	clusters := strings.Split(res,"\n")
+	ctx.JSON(200, APIResult{Clusters: clusters})
 }
