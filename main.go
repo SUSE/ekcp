@@ -46,7 +46,7 @@ func NewAPIResult(output string) APIResult {
 	}
 	var clusters []string
 
-	if len(res) >0 {
+	if len(res) > 0 {
 		clusters = strings.Split(res, "\n")
 	}
 
@@ -59,8 +59,31 @@ func NewAPIResult(output string) APIResult {
 	return APIResult{Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output}
 }
 
+func ProxyStartup() error {
+	result := NewAPIResult("")
+	for _, cluster := range result.Clusters {
+		kubeconfigPath, err := KubePath(cluster)
+		if err != nil {
+			return err
+		}
+		port, err := GetFreePort()
+		if err != nil {
+			return err
+		}
+		err = KubeStartProxy(cluster, kubeconfigPath, port)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	m := macaron.Classic()
+	err := ProxyStartup()
+	if err != nil {
+		panic(err)
+	}
 	m.Use(macaron.Renderer())
 
 	m.Get("/:id", GetKubeConfig)
@@ -68,7 +91,7 @@ func main() {
 	m.Delete("/:id", DeleteCluster)
 	m.Get("/", ListClusters)
 
-	m.Get("/kubeconfig/:id",GetProxyKubeConfig)
+	m.Get("/kubeconfig/:id", GetProxyKubeConfig)
 	m.Get("/kube/:id", GetKubeEndpoint)
 
 	m.Run()
