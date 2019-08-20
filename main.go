@@ -25,9 +25,10 @@ type KindCluster struct {
 }
 
 type APIResult struct {
-	Output   string
-	Clusters []string
-	Error    string
+	Output          string
+	Clusters        []string
+	ActiveEndpoints map[string]string
+	Error           string
 }
 
 type DB struct {
@@ -37,12 +38,25 @@ type DB struct {
 var Proxied = &DB{Proxy: make(map[string]string)}
 
 func NewAPIResult(output string) APIResult {
+
+	// Get running cluster in each successful response
 	res, err := Kind("get", "clusters")
 	if err != nil {
 		return APIResult{Error: err.Error(), Output: res}
 	}
-	clusters := strings.Split(res, "\n")
-	return APIResult{Clusters: clusters, Output: output}
+	var clusters []string
+
+	if len(res) >0 {
+		clusters = strings.Split(res, "\n")
+	}
+
+	activeEndpoints := make(map[string]string)
+	// Get active endpoints
+	for cluster, port := range Proxied.Proxy {
+		activeEndpoints[cluster] = os.Getenv("HOST") + ":" + port
+	}
+
+	return APIResult{Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output}
 }
 
 func main() {
@@ -54,6 +68,7 @@ func main() {
 	m.Delete("/:id", DeleteCluster)
 	m.Get("/", ListClusters)
 
+	m.Get("/kubeconfig/:id",GetProxyKubeConfig)
 	m.Get("/kube/:id", GetKubeEndpoint)
 
 	m.Run()
@@ -66,6 +81,30 @@ func GetFreePort() (int, error) {
 	return port, nil
 }
 
+func GetProxyKubeConfig(ctx *macaron.Context) {
+	id := ctx.Params(":id")
+	port, ok := Proxied.Proxy[id]
+	if !ok {
+		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
+		return
+	}
+
+	ctx.PlainText(200, []byte(
+`apiVersion: v1
+clusters:
+- cluster:
+    server: http://`+os.Getenv("HOST")+":"+port+`
+  name: kind
+contexts:
+- context:
+    cluster: kind
+    user: kubernetes-admin
+  name: kubernetes-admin@kind
+current-context: kubernetes-admin@kind
+kind: Config
+preferences: {}`))
+}
+
 func GetKubeEndpoint(ctx *macaron.Context) {
 	id := ctx.Params(":id")
 	port, ok := Proxied.Proxy[id]
@@ -73,7 +112,7 @@ func GetKubeEndpoint(ctx *macaron.Context) {
 		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
 		return
 	}
-	ctx.JSON(200, NewAPIResult(os.Getenv("HOST")+port))
+	ctx.JSON(200, NewAPIResult(os.Getenv("HOST")+":"+port))
 }
 
 func KubeStartProxy(clustername, kubeconfig string, port int) error {
