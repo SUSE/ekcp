@@ -6,7 +6,6 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/macaron.v1"
 	"io/ioutil"
-
 	"os"
 	"os/exec"
 	"strconv"
@@ -20,8 +19,10 @@ import (
 )
 
 type KindCluster struct {
-	Name    string `form:"name" binding:"Required"`
-	Version string `form:"version"` // TODO: Implement different kind cluster versions
+	Name     string `form:"name" binding:"Required"`
+	Version  string `form:"version"` // TODO: Implement different kind cluster versions
+	Register bool   `form:"route-register"`
+	Route    string `form:"route"`
 }
 
 type APIResult struct {
@@ -31,11 +32,41 @@ type APIResult struct {
 	Error           string
 }
 
-type DB struct {
-	Proxy map[string]string
+type Proxy struct {
+	Port     string
+	Server   *proxy.Server
+	Listener *StoppableListener
 }
 
-var Proxied = &DB{Proxy: make(map[string]string)}
+type DB struct {
+	Endpoints map[string]*Proxy
+}
+
+func (d *DB) GetProxy(s string) (string, error) {
+	p, ok := d.Endpoints[s]
+	if !ok {
+		return "", errors.New("No Proxy found for " + s)
+	}
+
+	return p.Port, nil
+
+}
+
+func (d *DB) SetProxy(id, port string, server *proxy.Server, listener *StoppableListener) {
+	d.Endpoints[id] = &Proxy{Port: port, Server: server, Listener: listener}
+}
+
+func (d *DB) StopProxy(id string) error {
+	p, ok := d.Endpoints[id]
+	if !ok {
+		return errors.New("No Proxy found for " + id)
+	}
+	p.Listener.Stop()
+	delete(d.Endpoints, id)
+	return nil
+}
+
+var Proxied = &DB{Endpoints: make(map[string]*Proxy)}
 
 func NewAPIResult(output string) APIResult {
 
@@ -52,8 +83,8 @@ func NewAPIResult(output string) APIResult {
 
 	activeEndpoints := make(map[string]string)
 	// Get active endpoints
-	for cluster, port := range Proxied.Proxy {
-		activeEndpoints[cluster] = os.Getenv("HOST") + ":" + port
+	for cluster, p := range Proxied.Endpoints {
+		activeEndpoints[cluster] = os.Getenv("HOST") + ":" + p.Port
 	}
 
 	return APIResult{Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output}
@@ -106,9 +137,9 @@ func GetFreePort() (int, error) {
 
 func GetProxyKubeConfig(ctx *macaron.Context) {
 	id := ctx.Params(":id")
-	port, ok := Proxied.Proxy[id]
-	if !ok {
-		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
+	port, err := Proxied.GetProxy(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
 		return
 	}
 
@@ -130,9 +161,9 @@ preferences: {}`))
 
 func GetKubeEndpoint(ctx *macaron.Context) {
 	id := ctx.Params(":id")
-	port, ok := Proxied.Proxy[id]
-	if !ok {
-		ctx.JSON(500, APIResult{Error: "No such cluster has been proxied"})
+	port, err := Proxied.GetProxy(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
 		return
 	}
 	ctx.JSON(200, NewAPIResult(os.Getenv("HOST")+":"+port))
@@ -161,9 +192,16 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 	if err != nil {
 		return err
 	}
+
+	retval, err := NewStoppableListener(l)
+
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Starting to serve on %s\n", l.Addr().String())
-	go server.ServeOnListener(l)
-	Proxied.Proxy[clustername] = strconv.Itoa(port)
+	go server.ServeOnListener(retval)
+	Proxied.SetProxy(clustername, strconv.Itoa(port), server, retval)
 
 	return nil
 }
@@ -246,6 +284,13 @@ func DeleteCluster(ctx *macaron.Context) {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
 		return
 	}
+
+	err = Proxied.StopProxy(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
+		return
+	}
+
 	ctx.JSON(200, NewAPIResult(res))
 }
 
