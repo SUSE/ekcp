@@ -5,8 +5,6 @@ import (
 	"gopkg.in/macaron.v1"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"strings"
 )
 
 type KindCluster struct {
@@ -90,17 +88,6 @@ func KubeConfig(id string) ([]byte, error) {
 		return []byte{}, err
 	}
 	return dat, nil
-}
-
-func Kind(args ...string) (string, error) {
-	out, err := exec.Command("kind", args...).CombinedOutput()
-	output := string(out)
-	output = strings.TrimSuffix(output, "\n")
-
-	if err != nil {
-		return output, err
-	}
-	return output, nil
 }
 
 func GetKubeConfig(ctx *macaron.Context) {

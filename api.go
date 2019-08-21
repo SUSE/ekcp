@@ -9,7 +9,9 @@ type APIResult struct {
 	Output          string
 	Clusters        []string
 	ActiveEndpoints map[string]string
-	Error           string
+	ClusterIPs      map[string]string
+
+	Error string
 }
 
 func NewAPIResult(output string) APIResult {
@@ -26,10 +28,13 @@ func NewAPIResult(output string) APIResult {
 	}
 
 	activeEndpoints := make(map[string]string)
+	clusterIPs := make(map[string]string)
 	// Get active endpoints
 	for cluster, p := range Proxied.Endpoints {
 		activeEndpoints[cluster] = os.Getenv("HOST") + ":" + p.Port
+		ip, _ := GetKubeIP(cluster)
+		clusterIPs[cluster] = ip
 	}
 
-	return APIResult{Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output}
+	return APIResult{Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output, ClusterIPs: clusterIPs}
 }
