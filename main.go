@@ -8,10 +8,9 @@ import (
 )
 
 type KindCluster struct {
-	Name     string `form:"name" binding:"Required"`
-	Version  string `form:"version"` // TODO: Implement different kind cluster versions
-	Register bool   `form:"route-register"`
-	Route    string `form:"route"`
+	Name    string `form:"name" binding:"Required"`
+	Version string `form:"version"` // TODO: Implement different kind cluster versions
+
 }
 
 func main() {
@@ -21,7 +20,9 @@ func main() {
 		panic(err)
 	}
 	m.Use(macaron.Renderer())
-
+	if os.Getenv("ROUTE_REGISTER") == "true" {
+		m.Use(MacaronRR())
+	}
 	m.Get("/:id", GetKubeConfig)
 	m.Post("/new", binding.Bind(KindCluster{}), NewCluster)
 	m.Delete("/:id", DeleteCluster)

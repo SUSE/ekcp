@@ -58,6 +58,8 @@ func GetFreePort() (int, error) {
 }
 
 func KubeStartProxy(clustername, kubeconfig string, port int) error {
+	listenIP := os.Getenv("HOST")
+
 	z, e := zap.NewProduction()
 	if e != nil {
 		return errors.New("Cannot create logger")
@@ -75,7 +77,7 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 	// Separate listening from serving so we can report the bound port
 	// when it is chosen by os (eg: port == 0)
 
-	l, err := server.Listen(os.Getenv("HOST"), port)
+	l, err := server.Listen(listenIP, port)
 
 	if err != nil {
 		return err
@@ -87,7 +89,7 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 		return err
 	}
 
-	fmt.Println("Starting to serve on %s\n", l.Addr().String())
+	fmt.Println("Starting to serve on", l.Addr().String())
 	go server.ServeOnListener(retval)
 	Proxied.SetProxy(clustername, strconv.Itoa(port), server, retval)
 

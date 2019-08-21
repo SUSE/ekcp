@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	nats "github.com/nats-io/nats.go"
+	macaron "gopkg.in/macaron.v1"
+	"os"
 )
 
 type RouteRegister struct{}
@@ -24,4 +26,24 @@ func (rr *RouteRegister) Register(host, port string, domains []string) error {
 		return err
 	}
 	return nil
+}
+
+func MacaronRR() macaron.Handler {
+	return func(ctx *macaron.Context) {
+		result := NewAPIResult("")
+		for _, cluster := range result.Clusters {
+			RegisterCluster(cluster)
+		}
+
+	}
+}
+
+func RegisterCluster(clustername string) {
+	listenIP := os.Getenv("HOST")
+	rr := NewRouteRegister()
+
+	ip, _ := GetKubeIP(clustername)
+
+	rr.Register(ip, "80", []string{clustername + "." + listenIP + ".nip.io"})
+	rr.Register(ip, "443", []string{clustername + "." + listenIP + ".nip.io"})
 }
