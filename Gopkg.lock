@@ -8,12 +8,6 @@
   version = "v0.3.1"
 
 [[projects]]
-  name = "github.com/cssivision/reverseproxy"
-  packages = ["."]
-  revision = "97815688f02ef1d49e3cd94ce1c4e634c9d0ca06"
-  version = "v0.0.1"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
@@ -96,10 +90,38 @@
   revision = "cca7078d478f"
 
 [[projects]]
+  name = "github.com/nats-io/nats.go"
+  packages = [
+    ".",
+    "encoders/builtin",
+    "util"
+  ]
+  revision = "e2837a2879e82886f6e21715e3a0217fdc46d370"
+  version = "v1.8.1"
+
+[[projects]]
+  name = "github.com/nats-io/nkeys"
+  packages = ["."]
+  revision = "0073b400419be3ffb022ef46b675805e92534a34"
+  version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/nats-io/nuid"
+  packages = ["."]
+  revision = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94"
+  version = "v1.0.1"
+
+[[projects]]
   name = "github.com/phayes/freeport"
   packages = ["."]
   revision = "b8543db493a5ed890c5499e935e2cad7504f3a04"
   version = "1.0.2"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -142,6 +164,8 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519",
     "pbkdf2",
     "ssh/terminal"
   ]
@@ -423,6 +447,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dab95b2c40fe05dd497b6d2151e731020791b4bef9d95b930f7c4e006bff9e94"
+  inputs-digest = "c656d2ade2d31b4222ee83c553a3a0339646cff2203618d88473df11e9da2f77"
   solver-name = "gps-cdcl"
   solver-version = 1
