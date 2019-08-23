@@ -4,46 +4,77 @@ import (
 	"fmt"
 	nats "github.com/nats-io/nats.go"
 	macaron "gopkg.in/macaron.v1"
-	"os"
 )
 
-type RouteRegister struct{}
+type Route struct {
+	Host    string `form:"host" binding:"Required"`
+	Domain  string `form:"domain"`
+	Port    string `form:"port"`
+	TLSPort string `form:"tls_port"`
+}
+
+type RouteRegister struct{ Routes []Route }
 
 func NewRouteRegister() *RouteRegister {
 	return &RouteRegister{}
 }
 
-func (rr *RouteRegister) Register(host, port string, domains []string) error {
+func (rr *RouteRegister) Register(r Route) error {
 	// Connect to a server
 	nc, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
 		return err
 	}
 
-	d := fmt.Sprintf("%+q", domains)
-	err = nc.Publish("gorouter.register", []byte(`{"host":"`+host+`","port":`+port+`, "uris": `+d+` }`))
+	d := fmt.Sprintf("%+q", []string{r.Domain}) // need to support multiple?
+	if len(r.TLSPort) > 0 {
+		err = nc.Publish("router.register", []byte(`{"host":"`+r.Host+`", "tls_port": `+r.TLSPort+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
+	} else {
+		err = nc.Publish("router.register", []byte(`{"host":"`+r.Host+`", "port":`+r.Port+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
+	}
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func MacaronRR() macaron.Handler {
+func MacaronRR(domain string) macaron.Handler {
 	return func(ctx *macaron.Context) {
-		result := NewAPIResult("")
-		for _, cluster := range result.Clusters {
-			RegisterCluster(cluster)
-		}
-
+		RegisterAll(domain)
 	}
 }
 
-func RegisterCluster(clustername string) {
-	listenIP := os.Getenv("HOST")
+func RegisterAll(domain string) {
+	result := NewAPIResult("")
+	for _, cluster := range result.Clusters {
+		err := RegisterCluster(cluster, domain)
+		if err != nil {
+			fmt.Println("[WARN] Failed registering route for", cluster, err.Error())
+		}
+	}
+}
+
+func RegisterCluster(clustername, domain string) error {
 	rr := NewRouteRegister()
 
-	ip, _ := GetKubeIP(clustername)
+	ip, err := GetKubeIP(clustername)
+	if err != nil {
+		return err
+	}
+	// TODO: Support other ports? (and maybe TCP conns as well?)
+	//route:= clustername + "." + listenIP + ".nip.io"
+	route := "*." + clustername + "." + domain
 
-	rr.Register(ip, "80", []string{clustername + "." + listenIP + ".nip.io"})
-	rr.Register(ip, "443", []string{clustername + "." + listenIP + ".nip.io"})
+	fmt.Println("[INFO] Registering route", route)
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
+	if err != nil {
+		return err
+	}
+
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

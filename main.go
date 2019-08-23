@@ -10,7 +10,6 @@ import (
 type KindCluster struct {
 	Name    string `form:"name" binding:"Required"`
 	Version string `form:"version"` // TODO: Implement different kind cluster versions
-
 }
 
 func main() {
@@ -21,7 +20,7 @@ func main() {
 	}
 	m.Use(macaron.Renderer())
 	if os.Getenv("ROUTE_REGISTER") == "true" {
-		m.Use(MacaronRR())
+		m.Use(MacaronRR(os.Getenv("DOMAIN")))
 	}
 	m.Get("/:id", GetKubeConfig)
 	m.Post("/new", binding.Bind(KindCluster{}), NewCluster)
@@ -30,6 +29,11 @@ func main() {
 
 	m.Get("/kubeconfig/:id", GetProxyKubeConfig)
 	m.Get("/kube/:id", GetKubeEndpoint)
+
+	// TODO: CRUD for routes
+	// m.Post("/routes/new", binding.Bind(Route{}), NewRoute)
+	// m.Delete("/routes/:id", DeleteRoute)
+	// m.Get("/routes", ListRoutes)
 
 	m.Run()
 }
