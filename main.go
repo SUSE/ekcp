@@ -46,11 +46,17 @@ func GetProxyKubeConfig(ctx *macaron.Context) {
 		return
 	}
 
+	kubehost := os.Getenv("KUBEHOST")
+	host := os.Getenv("HOST")
+	if len(kubehost) > 0 {
+		host = kubehost
+	}
+
 	ctx.PlainText(200, []byte(
 		`apiVersion: v1
 clusters:
 - cluster:
-    server: http://`+os.Getenv("HOST")+":"+port+`
+    server: http://`+host+":"+port+`
   name: kind
 contexts:
 - context:

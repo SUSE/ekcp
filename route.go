@@ -13,24 +13,28 @@ type Route struct {
 	TLSPort string `form:"tls_port"`
 }
 
-type RouteRegister struct{ Routes []Route }
-
-func NewRouteRegister() *RouteRegister {
-	return &RouteRegister{}
+type RouteRegister struct {
+	Routes []Route
+	Nats   *nats.Conn
 }
 
-func (rr *RouteRegister) Register(r Route) error {
+func NewRouteRegister() (*RouteRegister, error) {
 	// Connect to a server
 	nc, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &RouteRegister{Nats: nc}, nil
+}
 
+func (rr *RouteRegister) Register(r Route) error {
+
+	var err error
 	d := fmt.Sprintf("%+q", []string{r.Domain}) // need to support multiple?
 	if len(r.TLSPort) > 0 {
-		err = nc.Publish("router.register", []byte(`{"host":"`+r.Host+`", "tls_port": `+r.TLSPort+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
+		err = rr.Nats.Publish("router.register", []byte(`{"host":"`+r.Host+`", "tls_port": `+r.TLSPort+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
 	} else {
-		err = nc.Publish("router.register", []byte(`{"host":"`+r.Host+`", "port":`+r.Port+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
+		err = rr.Nats.Publish("router.register", []byte(`{"host":"`+r.Host+`", "port":`+r.Port+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
 	}
 	if err != nil {
 		return err
@@ -55,8 +59,10 @@ func RegisterAll(domain string) {
 }
 
 func RegisterCluster(clustername, domain string) error {
-	rr := NewRouteRegister()
-
+	rr, err := NewRouteRegister()
+	if err != nil {
+		return err
+	}
 	ip, err := GetKubeIP(clustername)
 	if err != nil {
 		return err
