@@ -6,6 +6,8 @@ import (
 	macaron "gopkg.in/macaron.v1"
 )
 
+var DefaultRouteRegister *RouteRegister
+
 type Route struct {
 	Host    string `form:"host" binding:"Required"`
 	Domain  string `form:"domain"`
@@ -19,12 +21,16 @@ type RouteRegister struct {
 }
 
 func NewRouteRegister() (*RouteRegister, error) {
-	// Connect to a server
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		return nil, err
+	if DefaultRouteRegister == nil {
+		// Connect to a server
+		nc, err := nats.Connect(nats.DefaultURL)
+		if err != nil {
+			return nil, err
+		}
+		DefaultRouteRegister = &RouteRegister{Nats: nc}
 	}
-	return &RouteRegister{Nats: nc}, nil
+
+	return DefaultRouteRegister, nil
 }
 
 func (rr *RouteRegister) Register(r Route) error {
