@@ -1,0 +1,38 @@
+version: '3'
+services:
+  ekcp:
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8830
+      - DOMAIN_REGISTER=true
+      - DOMAIN=vcap.me
+      - KUBEHOST=0.0.0.0 # Tweak this to your lan ip      
+    build: .
+    ports:
+    - "8830:8830"
+    links:
+    - nats
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      restart_policy:
+        condition: on-failure
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+    deploy:
+      restart_policy:
+        condition: on-failure
+  gorouter:
+    build: gorouter
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    links:
+      - nats
+    deploy:
+      restart_policy:
+        condition: on-failure
