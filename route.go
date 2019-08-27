@@ -36,7 +36,7 @@ func NewRouteRegister() (*RouteRegister, error) {
 func (rr *RouteRegister) Register(r Route) error {
 
 	var err error
-	d := fmt.Sprintf("%+q", []string{r.Domain, "*." + r.Domain}) // need to support multiple?
+	d := fmt.Sprintf("%+q", []string{r.Domain}) // need to support multiple?
 	if len(r.TLSPort) > 0 {
 		err = rr.Nats.Publish("router.register", []byte(`{"host":"`+r.Host+`", "tls_port": `+r.TLSPort+`, "uris": `+d+`, "tags":{"type":"cluster"} }`))
 	} else {
@@ -78,6 +78,15 @@ func RegisterCluster(clustername, domain string) error {
 	route := clustername + "." + domain
 
 	fmt.Println("[INFO] Registering route", route)
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route})
+	if err != nil {
+		return err
+	}
+
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route})
+	if err != nil {
+		return err
+	}
 	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
 	if err != nil {
 		return err
