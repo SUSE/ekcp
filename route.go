@@ -87,6 +87,30 @@ func RegisterCluster(clustername, domain string) error {
 	if err != nil {
 		return err
 	}
+
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
+	if err != nil {
+		return err
+	}
+
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route})
+	if err != nil {
+		return err
+	}
+
+	route = clustername + "." + ip + "." + domain
+
+	fmt.Println("[INFO] Registering route", route)
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route})
+	if err != nil {
+		return err
+	}
+
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route})
+	if err != nil {
+		return err
+	}
+
 	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
 	if err != nil {
 		return err
