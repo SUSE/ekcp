@@ -8,10 +8,11 @@ services:
       - DOMAIN=vcap.me
       - KUBEHOST=0.0.0.0 # Tweak this to your lan ip      
     build: .
-    ports:
-    - "8830:8830"
-    links:
-    - nats
+    network_mode: "host"
+    #ports:
+    #- "8830:8830"
+    #links:
+    #- nats
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     deploy:
@@ -27,10 +28,12 @@ services:
       restart_policy:
         condition: on-failure
   gorouter:
+   # Replace the pinned cert for security.
     build: gorouter
     ports:
       - "8081:8081"
       - "8082:8082"
+      - "8083:8083"
     links:
       - nats
     deploy:
