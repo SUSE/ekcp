@@ -3,9 +3,9 @@ services:
   ekcp:
     environment:
       - HOST=0.0.0.0
-      - PORT=8830
-      - DOMAIN_REGISTER=true
-      - DOMAIN=vcap.me
+      - PORT=8030
+      - ROUTE_REGISTER=true
+      - DOMAIN=nip.io
       - KUBEHOST=0.0.0.0 # Tweak this to your lan ip      
     build: .
     network_mode: "host"
