@@ -98,7 +98,7 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 
 func ProxyStartup() error {
 	result := NewAPIResult("")
-	for _, cluster := range result.Clusters {
+	for _, cluster := range result.AvailableClusters {
 		kubeconfigPath, err := KubePath(cluster)
 		if err != nil {
 			return err

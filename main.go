@@ -7,11 +7,6 @@ import (
 	"os"
 )
 
-type KindCluster struct {
-	Name    string `form:"name" binding:"Required"`
-	Version string `form:"version"` // TODO: Implement different kind cluster versions
-}
-
 func main() {
 	m := macaron.Classic()
 	err := ProxyStartup()
@@ -23,12 +18,18 @@ func main() {
 		m.Use(MacaronRR(os.Getenv("DOMAIN")))
 	}
 	m.Get("/:id", GetKubeConfig)
-	m.Post("/new", binding.Bind(KindCluster{}), NewCluster)
+	m.Post("/new", binding.Bind(KubernetesCluster{}), NewCluster)
 	m.Delete("/:id", DeleteCluster)
 	m.Get("/", ListClusters)
-
 	m.Get("/kubeconfig/:id", GetProxyKubeConfig)
 	m.Get("/kube/:id", GetKubeEndpoint)
+
+	m.Get("/api/v1/cluster/:id/info", ClusterInfo)
+	m.Get("/api/v1/cluster/:id/kubeconfig", GetProxyKubeConfig)
+	m.Get("/api/v1/cluster/:id/e2e/kubeconfig", GetKubeConfig)
+	m.Post("/api/v1/cluster/new", binding.Bind(KubernetesCluster{}), NewCluster)
+	m.Get("/api/v1/cluster", ListClusters)
+	m.Delete("/api/v1/cluster/:id", DeleteCluster)
 
 	// TODO: CRUD for routes
 	// m.Post("/routes/new", binding.Bind(Route{}), NewRoute)
@@ -87,7 +88,9 @@ func KubePath(cluster string) (string, error) {
 
 	return res, nil
 }
+
 func KubeConfig(id string) ([]byte, error) {
+	// TODO: Check in others in fed mode
 	res, err := KubePath(id)
 	if err != nil {
 		return []byte{}, err
@@ -111,7 +114,19 @@ func GetKubeConfig(ctx *macaron.Context) {
 	ctx.PlainText(200, res)
 }
 
-func NewCluster(ctx *macaron.Context, kc KindCluster) {
+func ClusterInfo(ctx *macaron.Context) {
+	id := ctx.Params(":id")
+	kindCluster, err := GetClusterInfo(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
+		return
+	}
+	ctx.JSON(200, kindCluster)
+}
+
+func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
+	// TODO: In fed. mode - check availability and allocate by redirecting if necessary.
+
 	res, err := Kind("create", "cluster", "--name", kc.Name)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
@@ -140,6 +155,9 @@ func NewCluster(ctx *macaron.Context, kc KindCluster) {
 
 func DeleteCluster(ctx *macaron.Context) {
 	id := ctx.Params(":id")
+
+	// TODO: In fed. mode - check locally and propagate delete otherwise.
+
 	res, err := Kind("delete", "cluster", "--name", id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})

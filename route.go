@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	nats "github.com/nats-io/nats.go"
+	"github.com/pkg/errors"
 	macaron "gopkg.in/macaron.v1"
 )
 
@@ -13,10 +14,15 @@ type Route struct {
 	Domain  string `form:"domain"`
 	Port    string `form:"port"`
 	TLSPort string `form:"tls_port"`
+	Cluster string
+}
+
+func (r Route) ToString() string {
+	return fmt.Sprintf("%s-%s-%s-%s", r.Host, r.Domain, r.Port, r.TLSPort)
 }
 
 type RouteRegister struct {
-	Routes []Route
+	Routes map[string]map[string]Route
 	Nats   *nats.Conn
 }
 
@@ -27,13 +33,30 @@ func NewRouteRegister() (*RouteRegister, error) {
 		if err != nil {
 			return nil, err
 		}
-		DefaultRouteRegister = &RouteRegister{Nats: nc}
+		DefaultRouteRegister = &RouteRegister{Nats: nc, Routes: make(map[string]map[string]Route)}
 	}
 
 	return DefaultRouteRegister, nil
 }
 
+func (rr *RouteRegister) ClusterRoutes(clustername string) ([]Route, error) {
+
+	routes, ok := rr.Routes[clustername]
+	if !ok {
+		return []Route{}, errors.New("No routes found for clustername")
+	}
+
+	var res []Route
+	for _, r := range routes {
+		res = append(res, r)
+	}
+	return res, nil
+}
 func (rr *RouteRegister) Register(r Route) error {
+	if _, ok := rr.Routes[r.Cluster]; !ok {
+		rr.Routes[r.Cluster] = make(map[string]Route)
+	}
+	rr.Routes[r.Cluster][r.ToString()] = r
 
 	var err error
 	d := fmt.Sprintf("%+q", []string{r.Domain}) // need to support multiple?
@@ -56,7 +79,7 @@ func MacaronRR(domain string) macaron.Handler {
 
 func RegisterAll(domain string) {
 	result := NewAPIResult("")
-	for _, cluster := range result.Clusters {
+	for _, cluster := range result.AvailableClusters {
 		err := RegisterCluster(cluster, domain)
 		if err != nil {
 			fmt.Println("[WARN] Failed registering route for", cluster, err.Error())
@@ -78,22 +101,22 @@ func RegisterCluster(clustername, domain string) error {
 	route := clustername + "." + domain
 
 	fmt.Println("[INFO] Registering route", route)
-	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route})
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route})
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route})
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
@@ -101,22 +124,22 @@ func RegisterCluster(clustername, domain string) error {
 	route = clustername + "." + ip + "." + domain
 
 	fmt.Println("[INFO] Registering route", route)
-	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route})
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: "*." + route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route})
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: "*." + route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, Port: "80", Domain: route})
+	err = rr.Register(Route{Host: ip, Port: "80", Domain: route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
 
-	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route})
+	err = rr.Register(Route{Host: ip, TLSPort: "443", Domain: route, Cluster: clustername})
 	if err != nil {
 		return err
 	}
