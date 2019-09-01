@@ -17,11 +17,12 @@ type APIResult struct {
 }
 
 type KubernetesCluster struct {
-	Name      string `form:"name" binding:"Required"`
-	ClusterIP string
-	ProxyURL  string
-	Routes    []Route
-	Version   string `form:"version"` // TODO: Implement different kind cluster versions
+	Name       string `form:"name" binding:"Required"`
+	ClusterIP  string
+	ProxyURL   string
+	Routes     []Route
+	Version    string `form:"version"` // TODO: Implement different kind cluster versions
+	Kubeconfig string
 }
 
 func NewAPIResult(output string) APIResult {
@@ -70,5 +71,5 @@ func GetClusterInfo(clustername string) (KubernetesCluster, error) {
 	if err != nil {
 		return KubernetesCluster{}, errors.Wrap(err, "Failed to get cluster routes")
 	}
-	return KubernetesCluster{Name: clustername, ClusterIP: ip, ProxyURL: os.Getenv("HOST") + ":" + cluster.Port, Routes: routes}, nil
+	return KubernetesCluster{Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + clustername + "/kubeconfig", Name: clustername, ClusterIP: ip, ProxyURL: os.Getenv("HOST") + ":" + cluster.Port, Routes: routes}, nil
 }
