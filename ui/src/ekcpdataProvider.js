@@ -5,7 +5,7 @@ import {
     CREATE,
     DELETE,
 } from 'react-admin';
-const apiUrl = process.env.KUBEHOST || 'http://localhost:9090';
+const apiUrl = window.location.protocol+'//'+window.location.hostname+(window.location.port ? ':'+window.location.port: '');
 
 /**
  * Maps react-admin queries to my REST API
