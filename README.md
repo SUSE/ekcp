@@ -1,6 +1,6 @@
-# [![Build Status](https://travis-ci.org/mudler/ekcp.svg?branch=master)](https://travis-ci.org/mudler/ekcp) Ekcp (Ephemeral Kind Clusters Provider)
+# [![Build Status](https://travis-ci.org/mudler/ekcp.svg?branch=master)](https://travis-ci.org/mudler/ekcp) Ekcp (Ephemeral Kubernetes Clusters Provider)
 
-EKCP aims to build a simple API to provide Kubernetes environment for development.
+EKCP aims to build a simple API to provide Kubernetes environment for development and :rocket: lab environments.
 
 # Requires
 
