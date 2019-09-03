@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/pkg/errors"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type APIResult struct {
@@ -17,12 +18,14 @@ type APIResult struct {
 }
 
 type KubernetesCluster struct {
-	Name       string `form:"name" binding:"Required"`
-	ClusterIP  string
-	ProxyURL   string
-	Routes     []Route
-	Version    string `form:"version"` // TODO: Implement different kind cluster versions
-	Kubeconfig string
+	Name             string `form:"name" binding:"Required"`
+	ClusterIP        string
+	ProxyURL         string
+	Routes           []Route
+	Version          string `form:"version"` // TODO: Implement different kind cluster versions
+	Kubeconfig       string
+	Federated        bool
+	InstanceEndpoint string
 }
 
 func NewAPIResult(output string) APIResult {
@@ -49,6 +52,14 @@ func NewAPIResult(output string) APIResult {
 		activeEndpoints[cluster] = kCluster.ProxyURL
 		clusterIPs[cluster] = kCluster.ClusterIP
 		clusters[cluster] = kCluster
+	}
+
+	if Federation.HasSlaves() {
+		kubeClusters := Federation.List()
+		for _, kubeC := range kubeClusters {
+			clusterIPs[kubeC.Name] = kubeC.ClusterIP
+			clusters[kubeC.Name] = kubeC
+		}
 	}
 
 	return APIResult{AvailableClusters: clusterNames, Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output, ClusterIPs: clusterIPs}

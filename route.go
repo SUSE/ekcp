@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	macaron "gopkg.in/macaron.v1"
@@ -79,7 +80,7 @@ func MacaronRR(domain string) macaron.Handler {
 
 func RegisterAll(domain string) {
 	result := NewAPIResult("")
-	for _, cluster := range result.AvailableClusters {
+	for cluster, _ := range result.ActiveEndpoints {
 		err := RegisterCluster(cluster, domain)
 		if err != nil {
 			fmt.Println("[WARN] Failed registering route for", cluster, err.Error())

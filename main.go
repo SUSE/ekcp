@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/go-macaron/binding"
-	"gopkg.in/macaron.v1"
 	"io/ioutil"
 	"os"
+
+	"github.com/go-macaron/binding"
+	"gopkg.in/macaron.v1"
 )
 
 func main() {
@@ -31,6 +32,13 @@ func main() {
 	m.Get("/api/v1/cluster", ListClusters)
 	m.Delete("/api/v1/cluster/:id", DeleteCluster)
 
+	if os.Getenv("FEDERATION") == "true" {
+		m.Post("/api/v1/federation/register", binding.Bind(EKCPServer{}), RegisterClusterToFederation)
+	}
+	if len(os.Getenv("FEDERATION_MASTER")) > 0 {
+		SendRegistrationRequest()
+	}
+
 	// TODO: CRUD for routes
 	// m.Post("/routes/new", binding.Bind(Route{}), NewRoute)
 	// m.Delete("/routes/:id", DeleteRoute)
@@ -41,14 +49,37 @@ func main() {
 
 func GetProxyKubeConfig(ctx *macaron.Context) {
 	id := ctx.Params(":id")
+	var kubehost, host string
+
+	if Federation.HasSlaves() {
+		if cluster, err := Federation.Search(id); err == nil {
+			ctx.PlainText(200, []byte(
+				`apiVersion: v1
+clusters:
+- cluster:
+    server: `+cluster.ProxyURL+`
+  name: kind
+contexts:
+- context:
+    cluster: kind
+    user: kubernetes-admin
+  name: kubernetes-admin@kind
+current-context: kubernetes-admin@kind
+kind: Config
+preferences: {}`))
+			return
+		}
+
+	}
+
 	port, err := Proxied.GetProxy(id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error()})
 		return
 	}
 
-	kubehost := os.Getenv("KUBEHOST")
-	host := os.Getenv("HOST")
+	kubehost = os.Getenv("KUBEHOST")
+	host = os.Getenv("HOST")
 	if len(kubehost) > 0 {
 		host = kubehost
 	}
@@ -71,6 +102,7 @@ preferences: {}`))
 
 func GetKubeEndpoint(ctx *macaron.Context) {
 	id := ctx.Params(":id")
+
 	port, err := Proxied.GetProxy(id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error()})
@@ -106,6 +138,7 @@ func KubeConfig(id string) ([]byte, error) {
 
 func GetKubeConfig(ctx *macaron.Context) {
 	id := ctx.Params(":id")
+
 	res, err := KubeConfig(id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: string(res)})
@@ -116,16 +149,31 @@ func GetKubeConfig(ctx *macaron.Context) {
 
 func ClusterInfo(ctx *macaron.Context) {
 	id := ctx.Params(":id")
-	kindCluster, err := GetClusterInfo(id)
+
+	if Federation.HasSlaves() {
+		if cluster, err := Federation.Search(id); err == nil {
+			ctx.JSON(200, cluster)
+			return
+		}
+	}
+
+	kubeC, err := GetClusterInfo(id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error()})
 		return
 	}
-	ctx.JSON(200, kindCluster)
+	ctx.JSON(200, kubeC)
 }
 
 func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
 	// TODO: In fed. mode - check availability and allocate by redirecting if necessary.
+
+	if Federation.HasSlaves() {
+		if err := Federation.Allocate(kc.Name); err == nil {
+			ctx.JSON(200, NewAPIResult("Cluster allocated correctly"))
+			return
+		}
+	}
 
 	res, err := Kind("create", "cluster", "--name", kc.Name)
 	if err != nil {
@@ -157,6 +205,12 @@ func DeleteCluster(ctx *macaron.Context) {
 	id := ctx.Params(":id")
 
 	// TODO: In fed. mode - check locally and propagate delete otherwise.
+	if Federation.HasSlaves() {
+		if err := Federation.Delete(id); err == nil {
+			ctx.JSON(200, NewAPIResult("Cluster deleted correctly"))
+			return
+		}
+	}
 
 	res, err := Kind("delete", "cluster", "--name", id)
 	if err != nil {
