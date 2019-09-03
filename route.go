@@ -80,7 +80,7 @@ func MacaronRR(domain string) macaron.Handler {
 
 func RegisterAll(domain string) {
 	result := NewAPIResult("")
-	for cluster, _ := range result.ActiveEndpoints {
+	for _, cluster := range result.LocalClusters {
 		err := RegisterCluster(cluster, domain)
 		if err != nil {
 			fmt.Println("[WARN] Failed registering route for", cluster, err.Error())

@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/kubectl/pkg/proxy"
-	"os"
-	"strconv"
-	"time"
 
 	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 )
@@ -98,7 +99,7 @@ func KubeStartProxy(clustername, kubeconfig string, port int) error {
 
 func ProxyStartup() error {
 	result := NewAPIResult("")
-	for _, cluster := range result.AvailableClusters {
+	for _, cluster := range result.LocalClusters {
 		kubeconfigPath, err := KubePath(cluster)
 		if err != nil {
 			return err

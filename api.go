@@ -13,6 +13,7 @@ type APIResult struct {
 	Clusters          map[string]KubernetesCluster
 	ActiveEndpoints   map[string]string
 	ClusterIPs        map[string]string
+	LocalClusters     []string
 
 	Error string
 }
@@ -37,8 +38,11 @@ func NewAPIResult(output string) APIResult {
 	}
 	clusters := make(map[string]KubernetesCluster)
 	var clusterNames []string
+	var localClusters []string
+
 	if len(res) > 0 {
 		clusterNames = strings.Split(res, "\n")
+		localClusters = clusterNames
 	}
 
 	activeEndpoints := make(map[string]string)
@@ -57,12 +61,13 @@ func NewAPIResult(output string) APIResult {
 	if Federation.HasSlaves() {
 		kubeClusters := Federation.List()
 		for _, kubeC := range kubeClusters {
+			clusterNames = append(clusterNames, kubeC.Name)
 			clusterIPs[kubeC.Name] = kubeC.ClusterIP
 			clusters[kubeC.Name] = kubeC
 		}
 	}
 
-	return APIResult{AvailableClusters: clusterNames, Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output, ClusterIPs: clusterIPs}
+	return APIResult{LocalClusters: localClusters, AvailableClusters: clusterNames, Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output, ClusterIPs: clusterIPs}
 }
 
 func GetClusterInfo(clustername string) (KubernetesCluster, error) {
