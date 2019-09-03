@@ -71,6 +71,13 @@ func NewAPIResult(output string) APIResult {
 }
 
 func GetClusterInfo(clustername string) (KubernetesCluster, error) {
+	var kubehost, host string
+
+	kubehost = os.Getenv("KUBEHOST")
+	host = os.Getenv("HOST")
+	if len(kubehost) > 0 {
+		host = kubehost
+	}
 	cluster, ok := Proxied.Endpoints[clustername]
 	if !ok {
 		return KubernetesCluster{}, errors.New("Cluster not proxied")
@@ -87,5 +94,5 @@ func GetClusterInfo(clustername string) (KubernetesCluster, error) {
 	if err != nil {
 		return KubernetesCluster{}, errors.Wrap(err, "Failed to get cluster routes")
 	}
-	return KubernetesCluster{Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + clustername + "/kubeconfig", Name: clustername, ClusterIP: ip, ProxyURL: os.Getenv("HOST") + ":" + cluster.Port, Routes: routes}, nil
+	return KubernetesCluster{Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + clustername + "/kubeconfig", Name: clustername, ClusterIP: ip, ProxyURL: host + ":" + cluster.Port, Routes: routes}, nil
 }

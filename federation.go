@@ -131,10 +131,7 @@ func (c *EKCPServer) Status() (APIResult, error) {
 func (c *EKCPServer) CreateCluster(clustername string) error {
 	var res APIResult
 
-	//one-line post request/response...
 	response, err := http.PostForm(c.Endpoint+"/api/v1/cluster/new", url.Values{"name": {clustername}})
-
-	//okay, moving on...
 	if err != nil {
 		return err
 	}
@@ -248,10 +245,7 @@ func RegisterClusterToFederation(ctx *macaron.Context, ekcp EKCPServer) {
 func SendRegistrationRequest() error {
 	var res APIResult
 
-	//one-line post request/response...
 	response, err := http.PostForm(os.Getenv("FEDERATION_MASTER")+"/api/v1/federation/register", url.Values{"endpoint": {"http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT")}})
-
-	//okay, moving on...
 	if err != nil {
 		return err
 	}
