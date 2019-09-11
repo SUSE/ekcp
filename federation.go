@@ -43,6 +43,9 @@ func (c *EKCPController) List() []KubernetesCluster {
 	for _, e := range c.Clusters {
 		if res, err := e.Status(); err == nil {
 			for _, kubeC := range res.Clusters {
+				// annotate that the cluster is federated
+				kubeC.Federated = true
+				kubeC.InstanceEndpoint = e.Endpoint
 				kubeClusters = append(kubeClusters, kubeC)
 			}
 		}
