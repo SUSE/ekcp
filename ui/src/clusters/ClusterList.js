@@ -70,8 +70,8 @@ const ClusterList = withStyles(styles)(({ classes, ...props }) => (
             medium={
             // <Datagrid rowClick={rowClick} expand={<ClusterPanel />}>
                 <Datagrid>
-                    <TextField source="id" />
-                    <TextField source="name" cellClassName={classes.title} />
+                    <TextField label="Cluster Name" source="id"  cellClassName={classes.title} />
+                    <TextField source="kubeconfig" />
                
                     <ClusterListActionToolbar>
                         <ShowButton />

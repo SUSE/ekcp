@@ -32,8 +32,6 @@ const ClusterShow = props => (
                                 <TextField source="Host" />
                                 <TextField source="Port" />
                                 <TextField label="SSL" source="TLSPort" />
-
-
                             </Datagrid>
                         </ArrayField>
                 </Tab>
@@ -47,16 +45,16 @@ const ClusterShow = props => (
                     </Button>
                  </a>
                 </Tab>
-
+                { controllerProps.record.Federated &&
                 <Tab label="Federation">
                 <TextField source="InstanceEndpoint" />
-
                 <a target="_blank" href={`${controllerProps.record.InstanceEndpoint}/ui`}>
                     <Button >
                         <p>Go to UI</p>
                     </Button>
                  </a>
                 </Tab>
+                }
                 </TabbedShowLayout> 
 
             </ShowView>

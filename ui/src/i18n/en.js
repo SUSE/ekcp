@@ -8,51 +8,10 @@ export const messages = {
             close: 'Close',
             resetViews: 'Reset views',
         },
-        'create-post': 'New post',
+        'create-cluster': 'New cluster',
     },
     ...mergeTranslations(englishMessages, treeEnglishMessages),
-    resources: {
-        posts: {
-            name: 'Post |||| Posts',
-            fields: {
-                average_note: 'Average note',
-                body: 'Body',
-                comments: 'Comments',
-                commentable: 'Commentable',
-                commentable_short: 'Com.',
-                created_at: 'Created at',
-                notifications: 'Notifications recipients',
-                nb_view: 'Nb views',
-                password: 'Password (if protected post)',
-                pictures: 'Related Pictures',
-                published_at: 'Published at',
-                teaser: 'Teaser',
-                tags: 'Tags',
-                title: 'Title',
-                views: 'Views',
-                authors: 'Authors',
-            },
-        },
-        comments: {
-            name: 'Comment |||| Comments',
-            fields: {
-                body: 'Body',
-                created_at: 'Created at',
-                post_id: 'Posts',
-                author: {
-                    name: 'Author',
-                },
-            },
-        },
-        users: {
-            name: 'User |||| Users',
-            fields: {
-                name: 'Name',
-                role: 'Role',
-            },
-        },
-    },
-    post: {
+    cluster: {
         list: {
             search: 'Search',
         },
@@ -63,36 +22,13 @@ export const messages = {
             comments: 'Comments',
         },
         edit: {
-            title: 'Post "%{title}"',
+            title: 'Cluster "%{title}"',
         },
         action: {
-            save_and_edit: 'Save and Edit',
-            save_and_add: 'Save and Add',
-            save_and_show: 'Save and Show',
-            save_with_average_note: 'Save with Note',
+            create: 'Create',
         },
     },
-    comment: {
-        list: {
-            about: 'About',
-        },
-    },
-    user: {
-        list: {
-            search: 'Search',
-        },
-        form: {
-            summary: 'Summary',
-            security: 'Security',
-        },
-        edit: {
-            title: 'User "%{title}"',
-        },
-        action: {
-            save_and_add: 'Save and Add',
-            save_and_show: 'Save and Show',
-        },
-    },
+  
 };
 
 export default messages;

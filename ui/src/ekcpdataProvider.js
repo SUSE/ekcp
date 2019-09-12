@@ -63,36 +63,32 @@ export default (type, resource, params) => {
                     total: 1,
                 };
                 case GET_LIST:
-             
                 if (json.AvailableClusters != null) {
- for (const key of json.AvailableClusters) {
-    obj.push( { id : key, name: key});
-    i++
-}
+                    Object.keys(json.Clusters).forEach(function(key) {
+                        obj.push( { id : json.Clusters[key].Name, kubeconfig: json.Clusters[key].Kubeconfig });
+                        i++
+                    });
+              
                 }
                     return {
-                      
                         data: obj || [],
-                      total: obj.length
+                        total: obj.length
                     };
                 case CREATE:
-            
                     return {
-                      
-                        data: { id : clustername, name: clustername} ,
-                      total: 1
+                        data: { id : clustername} ,
+                        total: 1
                     };
                 case DELETE:
                 if (json.AvailableClusters != null) {
- for (const key of json.AvailableClusters) {
-    obj.push( { id : key, name: key});
-    i++
-}
+                    Object.keys(json.Clusters).forEach(function(key) {
+                        obj.push( { id : json.Clusters[key].Name, kubeconfig: json.Clusters[key].Kubeconfig });
+                        i++
+                    });
                 }
                     return {
-                      
                         data: obj || [],
-                      total: obj.length
+                        total: obj.length
                     };
                 default:
                     return { data: json };

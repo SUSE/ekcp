@@ -46,7 +46,7 @@ const ClusterCreateToolbar = props => (
       
       
         <SaveButton
-            label="post.action.save_and_show"
+            label="cluster.action.create"
             redirect="show"
             submitOnEnter={false}
             variant="flat"
