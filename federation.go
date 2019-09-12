@@ -3,17 +3,18 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"gopkg.in/macaron.v1"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-
-	"gopkg.in/macaron.v1"
+	"sync"
 )
 
 var Federation = &EKCPController{}
 
 type EKCPController struct {
+	sync.Mutex
 	Clusters []EKCPServer
 }
 
@@ -22,10 +23,14 @@ type EKCPServer struct {
 }
 
 func (c *EKCPController) HasSlaves() bool {
+	c.Lock()
+	defer c.Unlock()
 	return len(c.Clusters) != 0
 }
 
 func (c *EKCPController) Register(e EKCPServer) {
+	c.Lock()
+	defer c.Unlock()
 	exists := false
 	for _, ec := range c.Clusters {
 		if ec.Endpoint == e.Endpoint {
@@ -38,7 +43,8 @@ func (c *EKCPController) Register(e EKCPServer) {
 }
 
 func (c *EKCPController) List() []KubernetesCluster {
-
+	c.Lock()
+	defer c.Unlock()
 	kubeClusters := []KubernetesCluster{}
 	for _, e := range c.Clusters {
 		if res, err := e.Status(); err == nil {
@@ -54,6 +60,8 @@ func (c *EKCPController) List() []KubernetesCluster {
 }
 
 func (c *EKCPController) Search(clustername string) (KubernetesCluster, error) {
+	c.Lock()
+	defer c.Unlock()
 	for _, e := range c.Clusters {
 		if found, _ := e.Exists(clustername); found {
 			if kubeCluster, err := e.GetCluster(clustername); err == nil {
@@ -68,6 +76,8 @@ func (c *EKCPController) Search(clustername string) (KubernetesCluster, error) {
 }
 
 func (c *EKCPController) Delete(clustername string) error {
+	c.Lock()
+	defer c.Unlock()
 	for _, e := range c.Clusters {
 		if found, _ := e.Exists(clustername); found {
 			if err := e.DeleteCluster(clustername); err != nil {
@@ -79,6 +89,8 @@ func (c *EKCPController) Delete(clustername string) error {
 }
 
 func (c *EKCPController) Allocate(clustername string) error {
+	c.Lock()
+	defer c.Unlock()
 	var active []int
 	for _, e := range c.Clusters {
 		runningC, err := e.ActiveClusters()

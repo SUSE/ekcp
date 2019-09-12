@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-
 	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	macaron "gopkg.in/macaron.v1"
+	"sync"
 )
 
 var DefaultRouteRegister *RouteRegister
@@ -23,6 +23,7 @@ func (r Route) ToString() string {
 }
 
 type RouteRegister struct {
+	sync.Mutex
 	Routes map[string]map[string]Route
 	Nats   *nats.Conn
 }
@@ -41,7 +42,8 @@ func NewRouteRegister() (*RouteRegister, error) {
 }
 
 func (rr *RouteRegister) ClusterRoutes(clustername string) ([]Route, error) {
-
+	rr.Lock()
+	defer rr.Unlock()
 	routes, ok := rr.Routes[clustername]
 	if !ok {
 		return []Route{}, errors.New("No routes found for clustername")
@@ -54,6 +56,8 @@ func (rr *RouteRegister) ClusterRoutes(clustername string) ([]Route, error) {
 	return res, nil
 }
 func (rr *RouteRegister) Register(r Route) error {
+	rr.Lock()
+	defer rr.Unlock()
 	if _, ok := rr.Routes[r.Cluster]; !ok {
 		rr.Routes[r.Cluster] = make(map[string]Route)
 	}

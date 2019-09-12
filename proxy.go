@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
+	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/kubectl/pkg/proxy"
-
-	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
+	"sync"
 )
 
 var Proxied = &DB{Endpoints: make(map[string]*Proxy)}
@@ -23,10 +23,13 @@ type Proxy struct {
 }
 
 type DB struct {
+	sync.Mutex
 	Endpoints map[string]*Proxy
 }
 
 func (d *DB) GetProxy(s string) (string, error) {
+	d.Lock()
+	defer d.Unlock()
 	p, ok := d.Endpoints[s]
 	if !ok {
 		return "", errors.New("No Proxy found for " + s)
@@ -37,10 +40,14 @@ func (d *DB) GetProxy(s string) (string, error) {
 }
 
 func (d *DB) SetProxy(id, port string, server *proxy.Server, listener *StoppableListener) {
+	d.Lock()
+	defer d.Unlock()
 	d.Endpoints[id] = &Proxy{Port: port, Server: server, Listener: listener}
 }
 
 func (d *DB) StopProxy(id string) error {
+	d.Lock()
+	defer d.Unlock()
 	p, ok := d.Endpoints[id]
 	if !ok {
 		return errors.New("No Proxy found for " + id)
