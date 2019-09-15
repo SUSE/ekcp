@@ -23,7 +23,7 @@ const ClusterShow = props => (
                     <Tab label="Summary">
                 <TextField source="Name" />
                 <TextField source="ClusterIP" />
-                <DeleteButtonWithConfirmation record={record => recontrollerProps.record.name} resource={"cluster"} undoable={false} />
+                <DeleteButtonWithConfirmation record={record => controllerProps.record.name} resource={"cluster"} undoable={false} />
                 </Tab>
                 <Tab label="Routes">
                 <ArrayField source="Routes">

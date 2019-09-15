@@ -13,7 +13,7 @@ import {
 
 import ResetViewsButton from './ResetViewsButton';
 export const ClusterIcon = BookIcon;
-
+// See : https://github.com/marmelab/react-admin/blob/master/docs/Theming.md
 
 const styles = theme => ({
     title: {
