@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -19,6 +20,7 @@ type EKCPController struct {
 }
 
 type EKCPServer struct {
+	Id       int
 	Endpoint string `form:"endpoint" binding:"Required"`
 }
 
@@ -42,6 +44,28 @@ func (c *EKCPController) Register(e EKCPServer) {
 	}
 }
 
+func (c *EKCPController) Unregister(id int) error {
+	c.Lock()
+	defer c.Unlock()
+
+	if len(c.Clusters) < id+1 {
+		return errors.New("Endpoint not found")
+	}
+	c.Clusters = c.Clusters[:id+copy(c.Clusters[id:], c.Clusters[id+1:])]
+	return nil
+}
+
+func (c *EKCPController) Show(id int) (EKCPServer, error) {
+	c.Lock()
+	defer c.Unlock()
+	if len(c.Clusters) < id+1 {
+		return EKCPServer{}, errors.New("Endpoint not found")
+	}
+	cl := c.Clusters[id]
+	cl.Id = id
+	return cl, nil
+}
+
 func (c *EKCPController) List() []KubernetesCluster {
 	c.Lock()
 	defer c.Unlock()
@@ -57,6 +81,12 @@ func (c *EKCPController) List() []KubernetesCluster {
 		}
 	}
 	return kubeClusters
+}
+
+func (c *EKCPController) Registered() []EKCPServer {
+	c.Lock()
+	defer c.Unlock()
+	return c.Clusters
 }
 
 func (c *EKCPController) Search(clustername string) (KubernetesCluster, error) {
@@ -254,7 +284,7 @@ func (c *EKCPServer) GetCluster(clustername string) (KubernetesCluster, error) {
 
 func RegisterClusterToFederation(ctx *macaron.Context, ekcp EKCPServer) {
 	Federation.Register(ekcp)
-	ctx.JSON(200, NewAPIResult("Registered"))
+	ctx.JSON(200, NewAPIResult(strconv.Itoa(len(Federation.Registered())-1)))
 }
 
 func SendRegistrationRequest() error {

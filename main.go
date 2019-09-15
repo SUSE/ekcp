@@ -34,6 +34,9 @@ func main() {
 
 	if os.Getenv("FEDERATION") == "true" {
 		m.Post("/api/v1/federation/register", binding.Bind(EKCPServer{}), RegisterClusterToFederation)
+		m.Get("/api/v1/federation", ListFederation)
+		m.Delete("/api/v1/federation/:id", DeleteFederation)
+		m.Get("/api/v1/federation/:id/info", InfoFederation)
 	}
 	if len(os.Getenv("FEDERATION_MASTER")) > 0 {
 		SendRegistrationRequest()
@@ -229,4 +232,37 @@ func DeleteCluster(ctx *macaron.Context) {
 
 func ListClusters(ctx *macaron.Context) {
 	ctx.JSON(200, NewAPIResult(""))
+}
+
+func ListFederation(ctx *macaron.Context) {
+	ctx.JSON(200, Federation.Registered())
+}
+
+func DeleteFederation(ctx *macaron.Context) {
+	id := ctx.ParamsInt(":id")
+
+	if !Federation.HasSlaves() {
+
+		ctx.JSON(200, Federation.Registered())
+	}
+	if err := Federation.Unregister(id); err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
+	}
+
+	ctx.JSON(200, Federation.Registered())
+}
+
+func InfoFederation(ctx *macaron.Context) {
+	id := ctx.ParamsInt(":id")
+
+	if !Federation.HasSlaves() {
+
+		ctx.JSON(200, NewAPIResult("No endpoint registered"))
+	}
+	ep, err := Federation.Show(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
+	}
+
+	ctx.JSON(200, ep)
 }
