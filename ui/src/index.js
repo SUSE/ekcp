@@ -7,7 +7,7 @@ import ekcpdataProvider from './ekcpdataProvider';
 
 import i18nProvider from './i18nProvider';
 import clusters from './clusters';
-
+import federation from './federation';
 render(
     <Admin
         dataProvider={ekcpdataProvider}
@@ -17,7 +17,8 @@ render(
   
     >
      <Resource name="cluster" {...clusters} />
-    
+     <Resource name="federation" {...federation} />
+
     </Admin>,
     document.getElementById('root')
 );
