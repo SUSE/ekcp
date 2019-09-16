@@ -32,9 +32,9 @@ func main() {
 	m.Get("/api/v1/cluster", ListClusters)
 	m.Delete("/api/v1/cluster/:id", DeleteCluster)
 
+	m.Get("/api/v1/federation", ListFederation)
 	if os.Getenv("FEDERATION") == "true" {
 		m.Post("/api/v1/federation/register", binding.Bind(EKCPServer{}), RegisterClusterToFederation)
-		m.Get("/api/v1/federation", ListFederation)
 		m.Delete("/api/v1/federation/:id", DeleteFederation)
 		m.Get("/api/v1/federation/:id/info", InfoFederation)
 	}
