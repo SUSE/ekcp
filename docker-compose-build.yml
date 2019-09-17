@@ -1,14 +1,13 @@
 version: '3'
 services:
   ekcp:
-    image: quay.io/ekcp/ekcp
     environment:
       - HOST=0.0.0.0
       - PORT=8030
       - ROUTE_REGISTER=true
       - DOMAIN=nip.io
       - KUBEHOST=127.0.0.1 # Tweak this to your lan ip
-    #build: .
+    build: .
     network_mode: "host"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -25,8 +24,7 @@ services:
       restart_policy:
         condition: on-failure
   gorouter:
-    #build: gorouter
-    image: quay.io/ekcp/gorouter
+    build: gorouter
     ports:
       - "8081:8081"
       - "8082:8082"

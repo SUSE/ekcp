@@ -1,13 +1,32 @@
 version: '3'
 services:
-  ekcp:
-    image: quay.io/ekcp/ekcp
+  # Master (API) instance
+  ekcp-master:
     environment:
       - HOST=0.0.0.0
       - PORT=8030
+      - ROUTE_REGISTER=false
+      - DOMAIN=nip.io
+      - KUBEHOST=192.168.1.2  # Tweak this to your lan ip      
+      - FEDERATION=true
+    image: quay.io/ekcp/ekcp
+    #build: .
+    network_mode: "host"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      restart_policy:
+        condition: on-failure
+  ## Slave instance
+  ekcp-slave:
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8031
       - ROUTE_REGISTER=true
       - DOMAIN=nip.io
-      - KUBEHOST=127.0.0.1 # Tweak this to your lan ip
+      - KUBEHOST=192.168.1.2  # Tweak this to your lan ip      
+      - FEDERATION_MASTER=http://192.168.1.2:8030
+    image: quay.io/ekcp/ekcp
     #build: .
     network_mode: "host"
     volumes:
@@ -25,7 +44,7 @@ services:
       restart_policy:
         condition: on-failure
   gorouter:
-    #build: gorouter
+   # Replace the pinned cert for security.
     image: quay.io/ekcp/gorouter
     ports:
       - "8081:8081"
