@@ -172,7 +172,7 @@ func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
 	// TODO: In fed. mode - check availability and allocate by redirecting if necessary.
 
 	if Federation.HasSlaves() {
-		if err := Federation.Allocate(kc.Name); err == nil {
+		if err := Federation.Allocate(kc); err == nil {
 			ctx.JSON(200, NewAPIResult("Cluster allocated correctly"))
 			return
 		}

@@ -118,7 +118,7 @@ func (c *EKCPController) Delete(clustername string) error {
 	return nil
 }
 
-func (c *EKCPController) Allocate(clustername string) error {
+func (c *EKCPController) Allocate(kc KubernetesCluster) error {
 	c.Lock()
 	defer c.Unlock()
 	var active []int
@@ -136,7 +136,7 @@ func (c *EKCPController) Allocate(clustername string) error {
 	}
 	chosenC := FindMin(active)
 
-	return c.Clusters[chosenC].CreateCluster(clustername)
+	return c.Clusters[chosenC].CreateCluster(kc)
 }
 
 func FindMin(capacity []int) (index int) {
@@ -173,10 +173,16 @@ func (c *EKCPServer) Status() (APIResult, error) {
 	return res, nil
 }
 
-func (c *EKCPServer) CreateCluster(clustername string) error {
+func (c *EKCPServer) CreateCluster(kc KubernetesCluster) error {
 	var res APIResult
 
-	response, err := http.PostForm(c.Endpoint+"/api/v1/cluster/new", url.Values{"name": {clustername}})
+	response, err := http.PostForm(c.Endpoint+"/api/v1/cluster/new",
+		url.Values{
+			"name":       {kc.Name},
+			"node_image": {kc.NodeImage},
+			"kindconfig": {kc.RawEncodedKindConfig},
+			"version":    {kc.Version},
+		})
 	if err != nil {
 		return err
 	}
