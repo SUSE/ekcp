@@ -178,12 +178,17 @@ func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
 		}
 	}
 
-	res, err := Kind("create", "cluster", "--name", kc.Name)
-	if err != nil {
-		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
-
+	if os.Getenv("FEDERATION") == "true" {
+		ctx.JSON(500, APIResult{Error: "No available resources"})
 		return
 	}
+
+	res, err := kc.Start()
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
+		return
+	}
+
 	p, err := GetFreePort()
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error()})

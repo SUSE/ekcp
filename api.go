@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -19,14 +21,66 @@ type APIResult struct {
 }
 
 type KubernetesCluster struct {
-	Name             string `form:"name" binding:"Required"`
-	ClusterIP        string
-	ProxyURL         string
-	Routes           []Route
-	Version          string `form:"version"` // TODO: Implement different kind cluster versions
-	Kubeconfig       string
-	Federated        bool
-	InstanceEndpoint string
+	Name                 string `form:"name" binding:"Required"`
+	ClusterIP            string
+	ProxyURL             string
+	Routes               []Route
+	NodeImage            string `form:"node_image"`
+	Version              string `form:"version"` // TODO: Implement different kind versions
+	Kubeconfig           string
+	Federated            bool
+	InstanceEndpoint     string
+	RawEncodedKindConfig string `form:"kindconfig"` // base64 encoded config file
+}
+
+func (kc *KubernetesCluster) HasConfig() bool {
+	return len(kc.RawEncodedKindConfig) > 0
+}
+
+func (kc *KubernetesCluster) HasNodeImage() bool {
+	return len(kc.NodeImage) > 0
+}
+
+func (kc *KubernetesCluster) DecodeConfig() ([]byte, error) {
+	data, err := base64.StdEncoding.DecodeString(kc.RawEncodedKindConfig)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return data, nil
+}
+
+func (kc *KubernetesCluster) WriteConfig(path string) error {
+	config, err := kc.DecodeConfig()
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, config, os.ModePerm)
+}
+
+func (kc *KubernetesCluster) Start() (string, error) {
+
+	args := []string{"create", "cluster", "--name", kc.Name}
+	if kc.HasConfig() {
+		tmpFile, err := ioutil.TempFile(os.TempDir(), "ekcp-")
+		if err != nil {
+			return "", err
+		}
+
+		// Remember to clean up the file afterwards
+		defer os.Remove(tmpFile.Name())
+
+		if err := kc.WriteConfig(tmpFile.Name()); err != nil {
+			return "", err
+		}
+
+		args = append(args, "--config", tmpFile.Name())
+	}
+	if kc.HasNodeImage() {
+		args = append(args, "--image", kc.NodeImage)
+	}
+
+	return Kind(args...)
 }
 
 func NewAPIResult(output string) APIResult {
