@@ -9,12 +9,13 @@ MASTER_IP="$(cut -d'@' -f2 <<<"$API_SERVER")"
 
 function install() {
     local host=$1
-    ssh -4 -t -i $SSH_KEY $host 'sudo zypper in -y zsh docker docker-compose git' || true
-    ssh -4 -t -i $SSH_KEY $host 'sudo gpasswd -a $USER docker' || true
-    ssh -4 -t -i $SSH_KEY $host '[ ! -d ekcp ] && mkdir ekcp' || true
+    ssh -4 -t -i $SSH_KEY $host /bin/bash -c 'sudo zypper in -y zsh docker docker-compose git' || true
+    ssh -4 -t -i $SSH_KEY $host /bin/bash -c 'sudo gpasswd -a $USER docker' || true
+    ssh -4 -t -i $SSH_KEY $host /bin/bash -c 'mkdir ekcp' || true
     ssh -4 -t -i $SSH_KEY $host 'sudo systemctl start docker && sudo systemctl enable docker'
     ssh -4 -t -i $SSH_KEY $host 'sudo systemctl stop firewalld && sudo systemctl disable firerwalld' || true
     scp -i $SSH_KEY docker-compose.yaml $host:./ekcp
+    ssh -4 -i $SSH_KEY $host 'pushd $HOME/ekcp && docker-compose -f docker-compose.yaml pull'  || true
     ssh -4 -i $SSH_KEY $host 'pushd $HOME/ekcp && docker-compose -f docker-compose.yaml down'  || true
     ssh -4 -i $SSH_KEY $host 'pushd $HOME/ekcp && docker-compose -f docker-compose.yaml up -d'
 }
