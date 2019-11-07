@@ -27,6 +27,10 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 
     curl  http://127.0.0.1:8030/kubeconfig/test
 
+### Store a kubeconfig from a local file
+
+    curl -d "name=test&kubeconfig=$(base64 kubeconfig)" -X POST http://127.0.0.1:8030/api/v1/cluster/insert
+
 ## Architecture
 
 EKCP currently uses ```kind``` as backend to create new Kubernetes cluster. A proxy is setted up for each cluster to allow remote connection leveraging ```kubectl proxy```. Gorouter is setted up with docker-compose and the routes are registered to a NATS server if ```ROUTE_REGISTER=true``` is set, allowing to use the gorouter as http proxy to resolve internal domains.
