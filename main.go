@@ -28,6 +28,8 @@ func main() {
 	m.Get("/api/v1/cluster/:id/info", ClusterInfo)
 	m.Get("/api/v1/cluster/:id/kubeconfig", GetProxyKubeConfig)
 	m.Get("/api/v1/cluster/:id/e2e/kubeconfig", GetKubeConfig)
+	m.Post("/api/v1/cluster/insert", binding.Bind(KubernetesCluster{}), InsertCluster)
+
 	m.Post("/api/v1/cluster/new", binding.Bind(KubernetesCluster{}), NewCluster)
 	m.Get("/api/v1/cluster", ListClusters)
 	m.Delete("/api/v1/cluster/:id", DeleteCluster)
@@ -53,6 +55,13 @@ func main() {
 func GetProxyKubeConfig(ctx *macaron.Context) {
 	id := ctx.Params(":id")
 	var kubehost, host string
+
+	// Check first if it was stored
+	kubeconfig, err := Proxied.GetKubeConfig(id)
+	if err == nil {
+		ctx.PlainText(200, []byte(kubeconfig))
+		return
+	}
 
 	if Federation.HasSlaves() {
 		if cluster, err := Federation.Search(id); err == nil {
@@ -168,6 +177,16 @@ func ClusterInfo(ctx *macaron.Context) {
 	ctx.JSON(200, kubeC)
 }
 
+func InsertCluster(ctx *macaron.Context, kc KubernetesCluster) {
+	config, err := kc.DecodeKubeConfig()
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
+		return
+	}
+	Proxied.AddKubeConfig(kc.Name, string(config))
+	ctx.JSON(200, NewAPIResult("Cluster details stored"))
+}
+
 func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
 	// TODO: In fed. mode - check availability and allocate by redirecting if necessary.
 
@@ -211,6 +230,14 @@ func NewCluster(ctx *macaron.Context, kc KubernetesCluster) {
 
 func DeleteCluster(ctx *macaron.Context) {
 	id := ctx.Params(":id")
+
+	// Check first if it was stored
+	_, err := Proxied.GetKubeConfig(id)
+	if err == nil {
+		Proxied.RemoveKubeConfig(id)
+		ctx.JSON(200, NewAPIResult("Cluster deleted correctly"))
+		return
+	}
 
 	// TODO: In fed. mode - check locally and propagate delete otherwise.
 	if Federation.HasSlaves() {

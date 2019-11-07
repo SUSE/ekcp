@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-var Proxied = &DB{Endpoints: make(map[string]*Proxy)}
+var Proxied = &DB{Endpoints: make(map[string]*Proxy), ExternalKubeConfigs: make(map[string]string)}
 
 type Proxy struct {
 	Port     string
@@ -24,7 +24,40 @@ type Proxy struct {
 
 type DB struct {
 	sync.Mutex
-	Endpoints map[string]*Proxy
+	Endpoints           map[string]*Proxy
+	ExternalKubeConfigs map[string]string
+}
+
+func (d *DB) RemoveKubeConfig(clusterName string) {
+	d.Lock()
+	defer d.Unlock()
+	delete(d.ExternalKubeConfigs, clusterName)
+}
+
+func (d *DB) AddKubeConfig(clusterName, config string) {
+	d.Lock()
+	defer d.Unlock()
+	d.ExternalKubeConfigs[clusterName] = config
+}
+
+func (d *DB) GetKubeConfig(clusterName string) (string, error) {
+	d.Lock()
+	defer d.Unlock()
+	kubeConfig, ok := d.ExternalKubeConfigs[clusterName]
+	if !ok {
+		return "", errors.New("No kubeconfig found for " + clusterName)
+	}
+	return kubeConfig, nil
+}
+
+func (d *DB) ExternalClusters() []string {
+	d.Lock()
+	defer d.Unlock()
+	clusters := []string{}
+	for k, _ := range d.ExternalKubeConfigs {
+		clusters = append(clusters, k)
+	}
+	return clusters
 }
 
 func (d *DB) GetProxy(s string) (string, error) {

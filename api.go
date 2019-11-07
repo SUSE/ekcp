@@ -50,6 +50,15 @@ func (kc *KubernetesCluster) DecodeConfig() ([]byte, error) {
 	return data, nil
 }
 
+func (kc *KubernetesCluster) DecodeKubeConfig() ([]byte, error) {
+	data, err := base64.StdEncoding.DecodeString(kc.Kubeconfig)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return data, nil
+}
+
 func (kc *KubernetesCluster) WriteConfig(path string) error {
 	config, err := kc.DecodeConfig()
 	if err != nil {
@@ -121,6 +130,22 @@ func NewAPIResult(output string) APIResult {
 		}
 	}
 
+	if len(Proxied.ExternalClusters()) != 0 {
+		for _, kubeC := range Proxied.ExternalClusters() {
+			_, err := Proxied.GetKubeConfig(kubeC)
+			if err != nil {
+				continue
+			}
+			kc := KubernetesCluster{
+				Name:       kubeC,
+				Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + kubeC + "/kubeconfig", // To retreive it, use Proxied.GetKubeConfig
+			}
+			clusterNames = append(clusterNames, kubeC)
+			clusterIPs[kubeC] = ""
+			clusters[kubeC] = kc
+		}
+	}
+
 	return APIResult{LocalClusters: localClusters, AvailableClusters: clusterNames, Clusters: clusters, ActiveEndpoints: activeEndpoints, Output: output, ClusterIPs: clusterIPs}
 }
 
@@ -132,6 +157,15 @@ func GetClusterInfo(clustername string) (KubernetesCluster, error) {
 	if len(kubehost) > 0 {
 		host = kubehost
 	}
+
+	_, err := Proxied.GetKubeConfig(clustername)
+	if err == nil {
+		return KubernetesCluster{
+			Name:       clustername,
+			Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + clustername + "/kubeconfig",
+		}, nil
+	}
+
 	cluster, ok := Proxied.Endpoints[clustername]
 	if !ok {
 		return KubernetesCluster{}, errors.New("Cluster not proxied")
