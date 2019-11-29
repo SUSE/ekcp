@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
+	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type Bridge struct {
@@ -20,8 +22,14 @@ type DockerInspect struct {
 	NetworkSettings NetworkSettings `json:"NetworkSettings"`
 }
 
-func Kind(args ...string) (string, error) {
-	out, err := exec.Command("kind", args...).CombinedOutput()
+func Kind(envs []string, args ...string) (string, error) {
+
+	k := exec.Command("kind", args...)
+	k.Env = os.Environ()
+	for _, e := range envs {
+		k.Env = append(k.Env, e)
+	}
+	out, err := k.CombinedOutput()
 	output := string(out)
 	output = strings.TrimSuffix(output, "\n")
 

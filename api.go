@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -68,6 +70,12 @@ func (kc *KubernetesCluster) WriteConfig(path string) error {
 }
 
 func (kc *KubernetesCluster) Start() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", errors.Wrap(err, "Could not find user home")
+	}
+	path := filepath.Join(usr.HomeDir, ".kube", "kind-config-"+kc.Name)
+	env := []string{"KUBECONFIG=" + path}
 
 	args := []string{"create", "cluster", "--name", kc.Name}
 	if kc.HasConfig() {
@@ -89,13 +97,13 @@ func (kc *KubernetesCluster) Start() (string, error) {
 		args = append(args, "--image", kc.NodeImage)
 	}
 
-	return Kind(args...)
+	return Kind(env, args...)
 }
 
 func NewAPIResult(output string) APIResult {
 
 	// Get running cluster in each successful response
-	res, err := Kind("get", "clusters")
+	res, err := Kind([]string{}, "get", "clusters")
 	if err != nil {
 		return APIResult{Error: err.Error(), Output: res}
 	}

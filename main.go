@@ -3,9 +3,12 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"os/user"
+	"path/filepath"
 
 	"github.com/go-macaron/binding"
-	"gopkg.in/macaron.v1"
+	"github.com/pkg/errors"
+	macaron "gopkg.in/macaron.v1"
 )
 
 func main() {
@@ -124,13 +127,13 @@ func GetKubeEndpoint(ctx *macaron.Context) {
 }
 
 func KubePath(cluster string) (string, error) {
-	res, err := Kind("get", "kubeconfig-path", "--name", cluster)
+	usr, err := user.Current()
 	if err != nil {
-
-		return "", err
+		return "", errors.Wrap(err, "Could not find user home")
 	}
+	path := filepath.Join(usr.HomeDir, ".kube", "kind-config-"+cluster)
 
-	return res, nil
+	return path, nil
 }
 
 func KubeConfig(id string) ([]byte, error) {
@@ -247,7 +250,7 @@ func DeleteCluster(ctx *macaron.Context) {
 		}
 	}
 
-	res, err := Kind("delete", "cluster", "--name", id)
+	res, err := Kind([]string{}, "delete", "cluster", "--name", id)
 	if err != nil {
 		ctx.JSON(500, APIResult{Error: err.Error(), Output: res})
 		return
