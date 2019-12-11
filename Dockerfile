@@ -1,4 +1,4 @@
-FROM node:11.1.0-alpine as builder
+FROM node:13.3.0-alpine as builder
 RUN mkdir -p /usr/src/app
 RUN apk update && apk add git make
 

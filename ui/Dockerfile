@@ -1,4 +1,4 @@
-FROM node:11.1.0-alpine
+FROM node:13.3.0-alpine
 RUN mkdir -p /usr/src/app
 RUN apk update && apk add git make
 RUN git clone https://github.com/marmelab/react-admin.git /usr/src/app/react-admin
