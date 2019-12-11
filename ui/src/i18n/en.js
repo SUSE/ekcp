@@ -1,6 +1,5 @@
 import englishMessages from 'ra-language-english';
-import treeEnglishMessages from 'ra-tree-language-english';
-import { mergeTranslations } from 'react-admin';
+
 
 export const messages = {
     simple: {
@@ -10,7 +9,7 @@ export const messages = {
         },
         'create-cluster': 'New cluster',
     },
-    ...mergeTranslations(englishMessages, treeEnglishMessages),
+    ...englishMessages,
     cluster: {
         list: {
             search: 'Search',
