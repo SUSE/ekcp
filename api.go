@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -70,6 +71,17 @@ func (kc *KubernetesCluster) WriteConfig(path string) error {
 }
 
 func (kc *KubernetesCluster) Start() (string, error) {
+
+	// Limit number of active running clusters on a host
+	localLimit := os.Getenv("EKCP_CONCURRENT_CLUSTERS")
+	limit, err  := strconv.Atoi(localLimit)
+	if err == nil && limit != 0 {
+		api := NewAPIResult("")
+		if len(api.LocalClusters) >= limit {
+			return "", errors.New("Cannot allocate more clusters on this node")
+		}
+	}
+
 	usr, err := user.Current()
 	if err != nil {
 		return "", errors.Wrap(err, "Could not find user home")
