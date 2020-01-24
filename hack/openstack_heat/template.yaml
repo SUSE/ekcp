@@ -1,0 +1,56 @@
+heat_template_version: 2014-10-16
+#
+# you can deploy this template using the following command:
+# 'openstack stack create -t example.yaml --parameter key_name=<publicKeyName> <stackName>'
+description: Simple template to deploy an external ekcp worker
+
+parameters:
+  key_name:
+    type: string
+    constraints:
+      - custom_constraint: nova.keypair
+  ekcp_host:
+    type: string
+    description: The endpoint of your ekcp master node
+  public_network:
+    type: string
+    default: floating
+  flavor:
+    type: string
+    description: VM flavor
+    default: m1.large
+  image:
+    type: string
+    default: openSUSE-Leap-15.1-OpenStack
+    constraints:
+      - custom_constraint: glance.image
+  worker_count:
+    type: number
+    description: Number of Worker nodes to boot
+    default: 5
+  root_password:
+    type: string
+    description: Root Password for the VMs
+    default: linux
+  kind_version:
+    type: string
+    description: Kind version to use in the stack
+    default: 0.2.1
+    #default: v0.6.1
+
+resources:
+ compute_nodes:
+  type: OS::Heat::ResourceGroup
+  properties:
+    count: {get_param: worker_count}
+    resource_def:
+      type: https://raw.githubusercontent.com/mudler/ekcp/master/hack/openstack_heat/nested_stack.yaml
+       properties:
+         index: '%index%'
+         key_name: {get_param: key_name}
+         public_network: { get_param: public_network }
+         image: { get_param: image }
+         flavor: { get_param: flavor }
+         ekcp_host: { get_param: ekcp_host }
+         root_password: { get_param: root_password }
+         kind_version: { get_param: kind_version }

@@ -1,0 +1,234 @@
+heat_template_version: 2014-10-16
+#
+# you can deploy this template using the following command:
+# 'openstack stack create -t example.yaml --parameter key_name=<publicKeyName> <stackName>'
+
+description: Simple template to deploy an external ekcp worker
+
+parameters:
+  index:
+    type: string
+  key_name:
+    type: string
+    constraints:
+      - custom_constraint: nova.keypair
+  ekcp_host:
+    type: string
+    description: The endpoint of your ekcp master node
+  public_network:
+    type: string
+    default: floating
+  flavor:
+    type: string
+    description: VM flavor
+    default: m1.large
+  image:
+    type: string
+    default: openSUSE-Leap-15.1-OpenStack
+    constraints:
+      - custom_constraint: glance.image
+  worker_count:
+    type: number
+    description: Number of Worker nodes to boot
+    default: 5
+  root_password:
+    type: string
+    description: Root Password for the VMs
+    default: linux
+  kind_version:
+    type: string
+    description: Kind version to use in the stack
+    default: 0.2.1
+    #default: v0.6.1
+
+resources:
+  
+  allow_ssh:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: allow incoming SSH and ICMP traffic from anywhere.
+      name: allow incoming traffic, tcp port 22 and icmp
+      rules: 
+        - { direction: ingress, remote_ip_prefix: 0.0.0.0/0, port_range_min: 22, port_range_max: 22, protocol: tcp } 
+        - { direction: ingress, remote_ip_prefix: 0.0.0.0/0, protocol: icmp } 
+
+  allow_webtraffic:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: allow incoming web traffic via http from anywhere. 
+      name: allow incoming traffic, tcp port 80
+      rules: 
+        - { direction: ingress, remote_ip_prefix: 0.0.0.0/0, port_range_min: 80, port_range_max: 80, protocol: tcp } 
+
+  
+  allow_all:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: allow incoming traffic  from anywhere. 
+      name: allow incoming traffic
+      rules: 
+        - { direction: ingress, remote_ip_prefix: 0.0.0.0/0, port_range_min: 1, port_range_max: 64000, protocol: tcp } 
+
+
+
+
+  ekcp_worker:
+        type: OS::Nova::Server
+        depends_on:
+        - port
+        - floating_ip
+        properties:
+          name: { list_join: ['-', [{get_param: 'OS::stack_name'}, 'worker', {get_param: index}]] }
+          image: { get_param: image }
+          key_name: { get_param: key_name }
+          flavor: { get_param: flavor }
+          networks:
+            - port: { get_resource: port }
+          # security_groups:
+          #   - { get_resource: allow_all }
+          #   - { get_resource: allow_ssh }
+          #   - { get_resource: allow_webtraffic }
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              template: |
+                #cloud-config
+                disable_root: False
+                ssh_deletekeys: False
+                ssh_pwauth: True
+                chpasswd:
+                  list: |
+                    root:$root_password
+                  expire: False
+              
+                ntp:
+                  enabled: true
+                  #servers:
+                  #  - ntp1.example.com
+                  #  - ntp2.example.com
+                  #  - ntp3.example.com
+                write_files:
+                  - content: |
+                      #!/usr/bin/env bash
+                      # start the ekcp worker
+
+                      IP=$ip
+                      KIND_VERSION=$kind_version
+                      MASTER_IP=$ekcp_host
+                      #mkdir ekcp
+                      git clone https://github.com/mudler/ekcp
+                      sudo systemctl start docker && sudo systemctl enable docker
+                      sudo systemctl stop firewalld && sudo systemctl disable firerwalld
+                      pushd ekcp
+                      rm -rf docker-compose.yaml
+                      cat <<EOF > docker-compose.yaml
+                      version: '3'
+                      services:
+                        ekcp-slave:
+                          environment:
+                            - HOST=0.0.0.0
+                            - PORT=8030
+                            - ROUTE_REGISTER=true
+                            - DOMAIN=nip.io
+                            - KUBEHOST=${IP}  # Tweak this to your lan ip      
+                            - FEDERATION_MASTER=${MASTER_IP}
+                          image: quay.io/ekcp/ekcp
+                            #build: .
+                          build:
+                            context: .
+                            args:
+                              - KIND_VERSION=${KIND_VERSION}
+                          network_mode: "host"
+                          restart: always
+                          volumes:
+                            - /var/run/docker.sock:/var/run/docker.sock
+
+                        nats:
+                          image: nats:latest
+                          ports:
+                            - "4222:4222"
+                            - "6222:6222"
+                            - "8222:8222"
+                          restart: always
+                        gorouter:
+                        # Replace the pinned cert for security.
+                          image: quay.io/ekcp/gorouter
+                          ports:
+                            - "8081:8081"
+                            - "8082:8082"
+                            - "8083:8083"
+                          links:
+                            - nats
+                          restart: always
+                      EOF
+
+                      cat docker-compose.yaml
+
+                      docker-compose -f docker-compose.yaml up --build -d
+
+                      # Swapaccount setup
+                      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& swapaccount=1/' /etc/default/grub
+                      grub2-mkconfig -o /boot/grub2/grub.cfg
+
+                      reboot
+
+                    path: /root/start.sh
+                    permissions: 0700  
+
+                packages:
+                  - docker
+                  - docker-compose
+                  - git
+                runcmd:
+                  - /root/start.sh
+              params:
+                $ip: {get_attr: [floating_ip, floating_ip_address]}
+                $root_password: { get_param: root_password }
+                $ekcp_host: { get_param: ekcp_host }
+                $kind_version: { get_param: kind_version }
+
+  port:
+    type: OS::Neutron::Port
+    depends_on: [ net, allow_ssh, allow_webtraffic ]
+    properties:
+      network: { get_resource: net }
+      security_groups: [ get_resource: allow_ssh, get_resource: allow_webtraffic , get_resource: allow_all ]
+
+  net:
+    type: OS::Neutron::Net
+    properties: 
+      name: ekcp-net
+
+  subnet:
+    type: OS::Neutron::Subnet
+    depends_on: [ net ]
+    properties:
+      name: ekcp-subnet
+      dns_nameservers:
+        - 8.8.8.8
+        - 8.8.4.4
+      network: { get_resource: net }
+      ip_version: 4
+      cidr: 10.0.0.0/24
+      allocation_pools:
+      - {start: 10.0.0.10, end: 10.0.0.250}
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info: {"network": { get_param: public_network }}
+      name: ekcp-router
+
+  router_subnet_bridge:
+    type: OS::Neutron::RouterInterface
+    depends_on: [ router, subnet ]
+    properties:
+      router: { get_resource: router }
+      subnet: { get_resource: subnet }
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    depends_on: [ port ]
+    properties:
+      floating_network: { get_param: public_network }
+      port_id: { get_resource: port }
