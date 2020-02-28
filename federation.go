@@ -10,9 +10,11 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var Federation = &EKCPController{}
+var ClientTimeoutSeconds = os.Getenv("CLIENT_TIMEOUT_SECONDS")
 
 type EKCPController struct {
 	sync.Mutex
@@ -22,6 +24,7 @@ type EKCPController struct {
 type EKCPServer struct {
 	Id       int
 	Endpoint string `form:"endpoint" binding:"Required"`
+	client   *http.Client
 }
 
 func (c *EKCPController) HasSlaves() bool {
@@ -150,11 +153,29 @@ func FindMin(capacity []int) (index int) {
 	}
 	return
 }
+func (c *EKCPServer) generateClient() *http.Client {
+	if c.client == nil {
+		var timeout int
+		var err error
+		if len(ClientTimeoutSeconds) > 0 {
+			if timeout, err = strconv.Atoi(ClientTimeoutSeconds); err != nil {
+				panic("Invalid input for CLIENT_TIMEOUT_SECONDS")
+			}
+		} else {
+			timeout = 30
+		}
+		c.client = &http.Client{
+			Timeout: time.Duration(timeout) * time.Second,
+		}
+	}
+
+	return c.client
+}
 
 func (c *EKCPServer) Status() (APIResult, error) {
 	var res APIResult
 
-	response, err := http.Get(c.Endpoint)
+	response, err := c.generateClient().Get(c.Endpoint)
 	if err != nil {
 		return res, err
 	}
@@ -208,7 +229,7 @@ func (c *EKCPServer) DeleteCluster(clustername string) error {
 	var res APIResult
 
 	// Create client
-	client := &http.Client{}
+	client := c.generateClient()
 
 	// Create request
 	req, err := http.NewRequest("DELETE", c.Endpoint+"/api/v1/cluster/"+clustername, nil)
@@ -295,8 +316,20 @@ func RegisterClusterToFederation(ctx *macaron.Context, ekcp EKCPServer) {
 
 func SendRegistrationRequest() error {
 	var res APIResult
+	var timeout int
+	var err error
+	if len(ClientTimeoutSeconds) > 0 {
+		if timeout, err = strconv.Atoi(ClientTimeoutSeconds); err != nil {
+			panic("Invalid input for CLIENT_TIMEOUT_SECONDS")
+		}
+	} else {
+		timeout = 30
+	}
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
 
-	response, err := http.PostForm(os.Getenv("FEDERATION_MASTER")+"/api/v1/federation/register", url.Values{"endpoint": {"http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT")}})
+	response, err := client.PostForm(os.Getenv("FEDERATION_MASTER")+"/api/v1/federation/register", url.Values{"endpoint": {"http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT")}})
 	if err != nil {
 		return err
 	}
