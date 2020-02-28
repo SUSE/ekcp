@@ -37,6 +37,10 @@ parameters:
     description: Kind version to use in the stack
     default: 0.2.1
     #default: v0.6.1
+  ekcp_concurrent_clusters:
+    type: number
+    description: Limit concurrent Kind clusters per VM
+    default: 1
 
 resources:
  compute_nodes:
@@ -54,3 +58,4 @@ resources:
          ekcp_host: { get_param: ekcp_host }
          root_password: { get_param: root_password }
          kind_version: { get_param: kind_version }
+         ekcp_concurrent_clusters: { get_param: ekcp_concurrent_clusters }

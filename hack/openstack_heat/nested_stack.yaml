@@ -40,6 +40,10 @@ parameters:
     description: Kind version to use in the stack
     default: 0.2.1
     #default: v0.6.1
+  ekcp_concurrent_clusters:
+    type: number
+    description: Limit concurrent Kind clusters per VM
+    default: 1
 
 resources:
   
@@ -115,6 +119,7 @@ resources:
                       IP=$ip
                       KIND_VERSION=$kind_version
                       MASTER_IP=$ekcp_host
+                      EKCP_CONCURRENT_CLUSTERS=$ekcp_concurrent_clusters
                       #mkdir ekcp
                       git clone https://github.com/mudler/ekcp
                       sudo systemctl start docker && sudo systemctl enable docker
@@ -132,6 +137,7 @@ resources:
                             - DOMAIN=nip.io
                             - KUBEHOST=${IP}  # Tweak this to your lan ip      
                             - FEDERATION_MASTER=${MASTER_IP}
+                            - EKCP_CONCURRENT_CLUSTERS=${EKCP_CONCURRENT_CLUSTERS}
                           image: quay.io/ekcp/ekcp
                             #build: .
                           build:
@@ -186,6 +192,7 @@ resources:
                 $root_password: { get_param: root_password }
                 $ekcp_host: { get_param: ekcp_host }
                 $kind_version: { get_param: kind_version }
+                $ekcp_concurrent_clusters: { get_param: ekcp_concurrent_clusters }
 
   port:
     type: OS::Neutron::Port
