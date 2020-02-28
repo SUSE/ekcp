@@ -41,6 +41,10 @@ parameters:
     type: number
     description: Limit concurrent Kind clusters per VM
     default: 1
+  client_timeout_seconds:
+    type: number
+    description: Client timeout (in seconds)
+    default: 360
 
 resources:
  compute_nodes:
@@ -59,3 +63,4 @@ resources:
          root_password: { get_param: root_password }
          kind_version: { get_param: kind_version }
          ekcp_concurrent_clusters: { get_param: ekcp_concurrent_clusters }
+         client_timeout_seconds: { get_param: client_timeout_seconds }

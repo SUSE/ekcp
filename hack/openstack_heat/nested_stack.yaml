@@ -44,6 +44,10 @@ parameters:
     type: number
     description: Limit concurrent Kind clusters per VM
     default: 1
+  client_timeout_seconds:
+    type: number
+    description: Client timeout (in seconds)
+    default: 360
 
 resources:
   
@@ -120,6 +124,7 @@ resources:
                       KIND_VERSION=$kind_version
                       MASTER_IP=$ekcp_host
                       EKCP_CONCURRENT_CLUSTERS=$ekcp_concurrent_clusters
+                      CLIENT_TIMEOUT_SECONDS=$client_timeout_seconds
                       #mkdir ekcp
                       git clone https://github.com/mudler/ekcp
                       sudo systemctl start docker && sudo systemctl enable docker
@@ -138,6 +143,7 @@ resources:
                             - KUBEHOST=${IP}  # Tweak this to your lan ip      
                             - FEDERATION_MASTER=${MASTER_IP}
                             - EKCP_CONCURRENT_CLUSTERS=${EKCP_CONCURRENT_CLUSTERS}
+                            - CLIENT_TIMEOUT_SECONDS=${CLIENT_TIMEOUT_SECONDS}
                           image: quay.io/ekcp/ekcp
                             #build: .
                           build:
@@ -193,6 +199,7 @@ resources:
                 $ekcp_host: { get_param: ekcp_host }
                 $kind_version: { get_param: kind_version }
                 $ekcp_concurrent_clusters: { get_param: ekcp_concurrent_clusters }
+                $client_timeout_seconds: { get_param: client_timeout_seconds }
 
   port:
     type: OS::Neutron::Port
