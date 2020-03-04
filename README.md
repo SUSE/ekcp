@@ -34,3 +34,11 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 ## Architecture
 
 EKCP currently uses ```kind``` as backend to create new Kubernetes cluster. A proxy is setted up for each cluster to allow remote connection leveraging ```kubectl proxy```. Gorouter is setted up with docker-compose and the routes are registered to a NATS server if ```ROUTE_REGISTER=true``` is set, allowing to use the gorouter as http proxy to resolve internal domains.
+
+## Openstack template
+
+Openstack template is available [here](https://github.com/mudler/ekcp/tree/master/hack/openstack_heat).
+
+It can be used to spawn a group of VM that will be automatically attached to an api master node (which has to be provided already, in the same network)
+
+To recreate the stack, just point the template URL to `https://raw.githubusercontent.com/mudler/ekcp/master/hack/openstack_heat/template.yaml`.
