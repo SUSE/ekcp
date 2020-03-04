@@ -30,6 +30,10 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 ### Store a kubeconfig from a local file
 
     curl -d "name=test&kubeconfig=$(base64 kubeconfig)" -X POST http://127.0.0.1:8030/api/v1/cluster/insert
+    
+### List available clusters:
+
+    curl http://127.0.0.1:8030/ | jq -r .AvailableClusters
 
 ## Architecture
 
