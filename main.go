@@ -28,6 +28,9 @@ func main() {
 	m.Get("/kubeconfig/:id", GetProxyKubeConfig)
 	m.Get("/kube/:id", GetKubeEndpoint)
 
+
+	m.Get("/api/v1/cluster/:id/images/cached", ClusterImages)
+
 	m.Get("/api/v1/cluster/:id/info", ClusterInfo)
 	m.Get("/api/v1/cluster/:id/kubeconfig", GetProxyKubeConfig)
 	m.Get("/api/v1/cluster/:id/e2e/kubeconfig", GetKubeConfig)
@@ -53,6 +56,24 @@ func main() {
 	// m.Get("/routes", ListRoutes)
 
 	m.Run()
+}
+
+func ClusterImages(ctx *macaron.Context) {
+	id := ctx.Params(":id")
+
+	if Federation.HasSlaves() {
+		if imageList, err := Federation.ImageList(id); err == nil {
+			ctx.JSON(200, imageList)
+			return
+		}
+	}
+
+	kubeC, err := GetClusterImages(id)
+	if err != nil {
+		ctx.JSON(500, APIResult{Error: err.Error()})
+		return
+	}
+	ctx.JSON(200, kubeC)
 }
 
 func GetProxyKubeConfig(ctx *macaron.Context) {
