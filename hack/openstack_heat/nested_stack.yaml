@@ -218,9 +218,6 @@ resources:
     depends_on: [ net ]
     properties:
       name: ekcp-subnet
-      dns_nameservers:
-        - 8.8.8.8
-        - 8.8.4.4
       network: { get_resource: net }
       ip_version: 4
       cidr: 10.0.0.0/24
