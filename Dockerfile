@@ -9,7 +9,7 @@ RUN cd /usr/src/app/react-admin && make install
 RUN rm -rf /usr/src/app/react-admin/examples/simple
 ADD ./ui /usr/src/app/react-admin/examples/simple
 WORKDIR /usr/src/app/react-admin/examples/simple
-RUN cd /usr/src/app/react-admin && make install
+RUN cd /usr/src/app/react-admin && make build install
 RUN cd /usr/src/app/react-admin/examples/simple && yarn build
 
 
