@@ -240,7 +240,7 @@ resources:
 
   floating_ip:
     type: OS::Neutron::FloatingIP
-    depends_on: [ port ]
+    depends_on: [ port, router ]
     properties:
       floating_network: { get_param: public_network }
       port_id: { get_resource: port }
