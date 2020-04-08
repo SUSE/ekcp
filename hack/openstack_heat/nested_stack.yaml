@@ -127,6 +127,7 @@ resources:
                       CLIENT_TIMEOUT_SECONDS=$client_timeout_seconds
                       #mkdir ekcp
                       git clone https://github.com/mudler/ekcp
+                      sudo /sbin/modprobe br_netfilter  || : # weave plugin will need this
                       sudo systemctl start docker && sudo systemctl enable docker
                       sudo systemctl stop firewalld && sudo systemctl disable firerwalld
                       pushd ekcp
