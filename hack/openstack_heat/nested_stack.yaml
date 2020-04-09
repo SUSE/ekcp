@@ -127,7 +127,6 @@ resources:
                       CLIENT_TIMEOUT_SECONDS=$client_timeout_seconds
                       #mkdir ekcp
                       git clone https://github.com/mudler/ekcp
-                      sudo /sbin/modprobe br_netfilter  || : # weave plugin will need this
                       sudo systemctl start docker && sudo systemctl enable docker
                       sudo systemctl stop firewalld && sudo systemctl disable firerwalld
                       pushd ekcp
@@ -182,6 +181,10 @@ resources:
                       # Swapaccount setup
                       sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& swapaccount=1/' /etc/default/grub
                       grub2-mkconfig -o /boot/grub2/grub.cfg
+
+                      # weave plugin needs ipv6 modules, these are missing
+                      # in kernel-default-base
+                      zypper -n in --force-resolution  kernel-default
 
                       reboot
 
