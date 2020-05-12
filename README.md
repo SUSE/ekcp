@@ -50,3 +50,9 @@ Openstack template is available [here](https://github.com/mudler/ekcp/tree/maste
 It can be used to spawn a group of VM that will be automatically attached to an api master node (which has to be provided already, in the same network)
 
 To recreate the stack, just point the template URL to `https://raw.githubusercontent.com/mudler/ekcp/master/hack/openstack_heat/template.yaml`.
+
+# Notes
+
+Clusters that has been created with EKCP needs to be deleted from the API. If you turn down and start up again the EKCP API while a cluster is up, it would then fail [see #6](https://github.com/mudler/ekcp/issues/6) for more context.
+
+The workaround is or either delete the kind cluster manually, or use the api to turn them down.
