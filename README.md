@@ -18,6 +18,10 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 ### Create a new cluster
 
     curl -d "name=test" -X POST http://127.0.0.1:8030/new
+    
+### Create a new cluster with a custom kind config
+
+    curl -d "name=test&kindconfig=$(base64 kindconfig.yaml)" -X POST http://127.0.0.1:8030/new
 
 ### Delete a cluster
 
