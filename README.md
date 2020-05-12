@@ -13,6 +13,24 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
     $> vim docker-compose.yml # Edit DOMAIN (pick one, reccomend to xip.io or nip.io) and KUBEHOST (your external IP)
     $> docker-compose up -d
 
+## Run on Kubernetes
+
+```bash
+> kubectl create namespace ekcp
+> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yml -n ekcp
+> kubectl port-forward service/ekcp-api-master 8030
+```
+
+Note: it works also on kind itself! Suitable for ephemeral environments inside a (testing) kube environment!
+
+```bash
+> kind create cluster
+> kubectl cluster-info --context kind-kind
+> kubectl create namespace ekcp
+> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yml -n ekcp
+> kubectl port-forward service/ekcp-api-master 8030 &
+```
+
 ## Simple API to create ephemeral clusters
 
 ### Create a new cluster
