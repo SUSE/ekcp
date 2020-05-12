@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -74,7 +75,7 @@ func (kc *KubernetesCluster) Start() (string, error) {
 
 	// Limit number of active running clusters on a host
 	localLimit := os.Getenv("EKCP_CONCURRENT_CLUSTERS")
-	limit, err  := strconv.Atoi(localLimit)
+	limit, err := strconv.Atoi(localLimit)
 	if err == nil && limit != 0 {
 		api := NewAPIResult("")
 		if len(api.LocalClusters) >= limit {
@@ -194,13 +195,27 @@ func GetClusterInfo(clustername string) (KubernetesCluster, error) {
 	if err != nil {
 		return KubernetesCluster{}, errors.Wrap(err, "Failed to get cluster ip")
 	}
-	rr, err := NewRouteRegister()
-	if err != nil {
-		return KubernetesCluster{}, errors.Wrap(err, "Failed to get route register ip")
+
+	var routes []Route
+	if os.Getenv("ROUTE_REGISTER") == "true" {
+		rr, err := NewRouteRegister()
+		if err != nil {
+			return KubernetesCluster{}, errors.Wrap(err, "Failed to get route register ip")
+		}
+		routes, err = rr.ClusterRoutes(clustername)
+		if err != nil {
+			return KubernetesCluster{}, errors.Wrap(err, "Failed to get cluster routes")
+		}
 	}
-	routes, err := rr.ClusterRoutes(clustername)
-	if err != nil {
-		return KubernetesCluster{}, errors.Wrap(err, "Failed to get cluster routes")
-	}
-	return KubernetesCluster{Kubeconfig: "http://" + os.Getenv("KUBEHOST") + ":" + os.Getenv("PORT") + "/api/v1/cluster/" + clustername + "/kubeconfig", Name: clustername, ClusterIP: ip, ProxyURL: host + ":" + cluster.Port, Routes: routes}, nil
+	return KubernetesCluster{
+		Kubeconfig: fmt.Sprintf("http://%s:%s/api/v1/cluster/%s/kubeconfig",
+			os.Getenv("KUBEHOST"),
+			os.Getenv("PORT"),
+			clustername,
+		),
+		Name:      clustername,
+		ClusterIP: ip,
+		ProxyURL:  host + ":" + cluster.Port,
+		Routes:    routes,
+	}, nil
 }
