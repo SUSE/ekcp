@@ -17,8 +17,8 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 
 ```bash
 > kubectl create namespace ekcp
-> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yml -n ekcp
-> kubectl port-forward service/ekcp-api-master 8030
+> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yaml -n ekcp
+> kubectl port-forward service/ekcp-api-master -n ekcp 8030
 ```
 
 Note: it works also on kind itself! Suitable for ephemeral environments inside a (testing) kube environment!
@@ -27,8 +27,8 @@ Note: it works also on kind itself! Suitable for ephemeral environments inside a
 > kind create cluster
 > kubectl cluster-info --context kind-kind
 > kubectl create namespace ekcp
-> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yml -n ekcp
-> kubectl port-forward service/ekcp-api-master 8030 &
+> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yaml -n ekcp
+> kubectl port-forward service/ekcp-api-master -n ekcp 8030 &
 ```
 
 ## Simple API to create ephemeral clusters
