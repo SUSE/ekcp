@@ -26,8 +26,8 @@ EXPOSE 8830
 RUN zypper in -y go make git docker wget
 RUN wget https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 -O /usr/local/bin/kind && chmod +x /usr/local/bin/kind
 
-ADD . $GOPATH/src/github.com/mudler/ekcp
-RUN go install github.com/mudler/ekcp
+ADD . $GOPATH/src/github.com/SUSE/ekcp
+RUN go install github.com/SUSE/ekcp
 WORKDIR /go/bin
 RUN mkdir -p public
 COPY --from=builder /usr/src/app/react-admin/examples/simple/dist ./public/ui

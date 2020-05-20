@@ -52,7 +52,7 @@ resources:
   properties:
     count: {get_param: worker_count}
     resource_def:
-       type: https://raw.githubusercontent.com/mudler/ekcp/master/hack/openstack_heat/nested_stack.yaml
+       type: https://raw.githubusercontent.com/SUSE/ekcp/master/hack/openstack_heat/nested_stack.yaml
        properties:
          index: '%index%'
          key_name: {get_param: key_name}

@@ -1,7 +1,0 @@
-language: go
-go:
-  - "1.12"
-before_install:
-  - make deps
-script:
-  - make multiarch-build

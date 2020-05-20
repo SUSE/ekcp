@@ -1,4 +1,4 @@
-# [![Build Status](https://travis-ci.org/mudler/ekcp.svg?branch=master)](https://travis-ci.org/mudler/ekcp) Ekcp (Ephemeral Kubernetes Clusters Provider)
+# Ekcp (Ephemeral Kubernetes Clusters Provider)
 
 EKCP aims to build a simple API to provide Kubernetes environment for development and :rocket: lab environments.
 
@@ -8,7 +8,7 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 
 ## Deploy with docker-compose
 
-    $> git clone https://github.com/mudler/ekcp
+    $> git clone https://github.com/SUSE/ekcp
     $> cd ekcp
     $> vim docker-compose.yml # Edit DOMAIN (pick one, reccomend to xip.io or nip.io) and KUBEHOST (your external IP)
     $> docker-compose up -d
@@ -17,7 +17,7 @@ EKCP aims to build a simple API to provide Kubernetes environment for developmen
 
 ```bash
 > kubectl create namespace ekcp
-> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yaml -n ekcp
+> kubectl apply -f https://raw.githubusercontent.com/SUSE/ekcp/master/kubernetes.yaml -n ekcp
 > kubectl port-forward service/ekcp-api-master -n ekcp 8030
 ```
 
@@ -27,7 +27,7 @@ Note: it works also on kind itself! Suitable for ephemeral environments inside a
 > kind create cluster
 > kubectl cluster-info --context kind-kind
 > kubectl create namespace ekcp
-> kubectl apply -f https://raw.githubusercontent.com/mudler/ekcp/master/kubernetes.yaml -n ekcp
+> kubectl apply -f https://raw.githubusercontent.com/SUSE/ekcp/master/kubernetes.yaml -n ekcp
 > kubectl port-forward service/ekcp-api-master -n ekcp 8030 &
 ```
 
@@ -63,14 +63,14 @@ EKCP currently uses ```kind``` as backend to create new Kubernetes cluster. A pr
 
 ## Openstack template
 
-Openstack template is available [here](https://github.com/mudler/ekcp/tree/master/hack/openstack_heat).
+Openstack template is available [here](https://github.com/SUSE/ekcp/tree/master/hack/openstack_heat).
 
 It can be used to spawn a group of VM that will be automatically attached to an api master node (which has to be provided already, in the same network)
 
-To recreate the stack, just point the template URL to `https://raw.githubusercontent.com/mudler/ekcp/master/hack/openstack_heat/template.yaml`.
+To recreate the stack, just point the template URL to `https://raw.githubusercontent.com/SUSE/ekcp/master/hack/openstack_heat/template.yaml`.
 
 # Notes
 
-Clusters that has been created with EKCP needs to be deleted from the API. If you turn down and start up again the EKCP API while a cluster is up, it would then fail [see #6](https://github.com/mudler/ekcp/issues/6) for more context.
+Clusters that has been created with EKCP needs to be deleted from the API. If you turn down and start up again the EKCP API while a cluster is up, it would then fail [see this Issue on GitHub](https://github.com/SUSE/ekcp/issues/2) for more context.
 
 The workaround is or either delete the kind cluster manually, or use the api to turn them down.

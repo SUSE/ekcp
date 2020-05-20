@@ -104,7 +104,7 @@ resources:
                       EKCP_CONCURRENT_CLUSTERS=$ekcp_concurrent_clusters
                       CLIENT_TIMEOUT_SECONDS=$client_timeout_seconds
                       #mkdir ekcp
-                      git clone https://github.com/mudler/ekcp
+                      git clone https://github.com/SUSE/ekcp
                       sudo systemctl start docker && sudo systemctl enable docker
                       sudo systemctl stop firewalld && sudo systemctl disable firerwalld
                       pushd ekcp
