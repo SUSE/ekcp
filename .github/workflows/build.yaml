@@ -12,6 +12,13 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go-version }}
+    - name: Setup env
+      run: |
+          echo "::set-env name=GOPATH::$(dirname $GITHUB_WORKSPACE)"
+          echo "::add-path::$(dirname $GITHUB_WORKSPACE)/bin"
+          mkdir -p "$(dirname $GITHUB_WORKSPACE)/src/github.com/SUSE"
+          ln -sf "$GITHUB_WORKSPACE/" "$(dirname $GITHUB_WORKSPACE)/src/github.com/SUSE/ekcp"
+      shell: bash
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Build
